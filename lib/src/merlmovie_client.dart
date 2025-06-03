@@ -24,6 +24,12 @@ SocketController? _controller;
 class MerlMovieClient {
   static SocketController? get socket => _controller;
 
+  static Future closeWSSConnection() async {
+    await _controller?.close();
+    _controller = null;
+    navigatorKey.currentContext?.read<BrowserProvider>().close();
+  }
+
   static Future<DirectLink?> request(
     EmbedModel embed, {
     void Function(int status, String message)? onError,

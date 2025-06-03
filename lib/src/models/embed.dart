@@ -4,7 +4,7 @@ class EmbedModel {
   String type = "movie";
   String tmdbId = "";
   String imdbId = "";
-  String? season, episode, title, thumbnail;
+  String? season, episode, title, thumbnail, title_logo;
   Map<String, dynamic>? detail;
   PluginModel plugin = PluginModel.fromMap({});
 
@@ -12,8 +12,11 @@ class EmbedModel {
     this.type = "movie",
     this.tmdbId = "",
     this.imdbId = "",
+    this.title,
+    this.thumbnail,
     this.season,
     this.episode,
+    this.title_logo,
     this.detail,
     required this.plugin,
   });
