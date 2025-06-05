@@ -99,8 +99,8 @@ class PlayerDisplayCaption extends StatelessWidget {
               style: getCaptionFontStyle(caption.data).copyWith(
                 fontSize: 18,
                 color: Colors.white,
-                backgroundColor: Colors.black.withOpacity(.9),
                 fontWeight: FontWeight.w500,
+                backgroundColor: Colors.black.withOpacity(.8),
               ),
             ),
           );
