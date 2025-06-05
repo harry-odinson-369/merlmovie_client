@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:merlmovie_client/merlmovie_client.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
+import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/widgets/plugin_item_view.dart';
+import 'package:merlmovie_client/src/widgets/scroll_to_index.dart';
 
-class SelectPlugins extends StatelessWidget {
+class PlayerSelectPlugin extends StatefulWidget {
   final List<PluginModel> plugins;
   final String? label;
   final EmbedModel embed;
-  const SelectPlugins({
+  const PlayerSelectPlugin({
     super.key,
     required this.embed,
     required this.plugins,
@@ -15,11 +17,42 @@ class SelectPlugins extends StatelessWidget {
   });
 
   @override
+  State<PlayerSelectPlugin> createState() => _PlayerSelectPluginState();
+}
+
+class _PlayerSelectPluginState extends State<PlayerSelectPlugin> {
+  late AutoScrollController controller;
+
+  void update() => mounted ? setState(() {}) : () {};
+
+  @override
+  void initState() {
+    super.initState();
+    controller = AutoScrollController(axis: Axis.vertical);
+    update();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      int index = widget.plugins.indexWhere((e) => e == widget.embed.plugin);
+      if (index != -1) {
+        controller.scrollToIndex(
+          index,
+          duration: const Duration(milliseconds: 150),
+          preferPosition: AutoScrollPosition.middle,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    controller.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      width: context.maxMobileWidth + 200,
+      width: context.maxMobileWidth,
       constraints: BoxConstraints(maxHeight: context.screen.height * .9),
-      padding: EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: Colors.grey.shade900,
         borderRadius: BorderRadius.only(
@@ -46,7 +79,7 @@ class SelectPlugins extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
-                    label ?? "Plugins",
+                    widget.label ?? "Sources",
                     style: context.theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -68,23 +101,32 @@ class SelectPlugins extends StatelessWidget {
           Expanded(
             child: ListView(
               shrinkWrap: true,
+              controller: controller,
               padding: EdgeInsets.symmetric(horizontal: 12),
               children: [
-                ...plugins.map((e) {
-                  bool isSelected = e == embed.plugin;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: PluginItemView(
-                      plugin: e,
-                      isSelected: isSelected,
-                      onTap: () {
-                        if (!isSelected) {
-                          Navigator.of(context).pop(e);
-                        }
-                      },
+                ...widget.plugins.build((e, i) {
+                  bool isSelected = e == widget.embed.plugin;
+                  return AutoScrollTag(
+                    index: i,
+                    key: Key("plugin_$i"),
+                    controller: controller,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: PluginItemView(
+                        plugin: e,
+                        isSelected: isSelected,
+                        onTap: () {
+                          if (!isSelected) {
+                            Navigator.of(context).pop(e);
+                          } else {
+                            Navigator.of(context).pop(null);
+                          }
+                        },
+                      ),
                     ),
                   );
                 }),
+                SizedBox(height: 60),
               ],
             ),
           ),

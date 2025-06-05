@@ -8,4 +8,5 @@ export './src/helpers/logger.dart';
 export './src/providers/browser.dart';
 export './src/widgets/player.dart';
 export './src/models/player_config.dart';
+export './src/models/movie.dart';
 export 'package:provider/provider.dart' show ChangeNotifierProvider;

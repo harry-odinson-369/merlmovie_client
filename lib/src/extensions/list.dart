@@ -17,3 +17,13 @@ extension ListExtension<T> on List<T> {
   }
 
 }
+
+extension MapWithIndex<E> on List<E> {
+
+  Iterable<T> build<T>(T Function(E e, int index) f) sync* {
+    for (int i = 0; i < length; i++) {
+      yield f(this[i], i);
+    }
+  }
+
+}

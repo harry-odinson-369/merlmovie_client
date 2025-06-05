@@ -10,16 +10,21 @@ class PlayerTopControls extends StatelessWidget {
   final EmbedModel embed;
   final Widget? trailing;
   final void Function()? onTrailingClicked;
+  final void Function()? preventHideControls;
   const PlayerTopControls({
     super.key,
     this.controller,
     required this.embed,
     this.trailing,
     this.onTrailingClicked,
+    this.preventHideControls,
   });
 
   static Future pop(BuildContext context) async {
-    bool isPop = await showPromptDialog(context, title: "Are you want to exit?");
+    bool isPop = await showPromptDialog(
+      context,
+      title: "Are you want to exit?",
+    );
     if (isPop) {
       Navigator.of(context).pop();
       MerlMovieClient.closeWSSConnection();
@@ -36,7 +41,10 @@ class PlayerTopControls extends StatelessWidget {
           SafeArea(
             bottom: false,
             child: IconButton(
-              onPressed: () => pop(context),
+              onPressed: () {
+                preventHideControls?.call();
+                pop(context);
+              },
               icon: Icon(Icons.arrow_back, color: Colors.white),
             ),
           ),
@@ -58,7 +66,13 @@ class PlayerTopControls extends StatelessWidget {
           SafeArea(
             bottom: false,
             child: IconButton(
-              onPressed: onTrailingClicked,
+              onPressed:
+                  onTrailingClicked != null
+                      ? () {
+                        preventHideControls?.call();
+                        onTrailingClicked?.call();
+                      }
+                      : null,
               icon: trailing ?? SizedBox(width: 24),
             ),
           ),

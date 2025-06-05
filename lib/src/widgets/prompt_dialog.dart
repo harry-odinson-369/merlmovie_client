@@ -93,10 +93,12 @@ class PromptDialog extends StatelessWidget {
     } else {
       return AlertDialog(
         title: Text(title, style: titleStyle),
-        content:
-            subtitle == null
-                ? null
-                : Text(subtitle ?? "", style: subtitleStyle),
+        content: SizedBox(
+          width: context.maxMobileWidth,
+          child: subtitle == null
+              ? null
+              : Text(subtitle ?? "", style: subtitleStyle),
+        ),
         actions: actions,
       );
     }

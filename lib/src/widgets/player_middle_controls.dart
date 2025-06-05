@@ -8,7 +8,12 @@ import 'package:video_player/video_player.dart';
 
 class PlayerMiddleControls extends StatelessWidget {
   final VideoPlayerController? controller;
-  const PlayerMiddleControls({super.key, this.controller});
+  final void Function()? preventHideControls;
+  const PlayerMiddleControls({
+    super.key,
+    this.controller,
+    this.preventHideControls,
+  });
 
   Future forward15Second() async {
     goPosition(
@@ -23,6 +28,7 @@ class PlayerMiddleControls extends StatelessWidget {
   }
 
   Future goPosition(Duration Function(Duration currentPosition) builder) async {
+    preventHideControls?.call();
     if (controller != null) {
       final currentPosition = await controller?.position;
       final newPosition = builder(currentPosition!);
@@ -59,7 +65,10 @@ class PlayerMiddleControls extends StatelessWidget {
             ),
           ],
         ),
-        PlayerPlayPause(controller: controller),
+        PlayerPlayPause(
+          controller: controller,
+          preventHideControls: preventHideControls,
+        ),
         Stack(
           alignment: Alignment.center,
           children: [

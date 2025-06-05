@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:video_player/video_player.dart';
 
-enum VideoViewType { cropToFit, stretch, original }
+enum VideoViewBuilderType { cropToFit, stretch, original }
 
 class PlayerVideoBuilder extends StatelessWidget {
   final VideoPlayerController? controller;
-  final VideoViewType viewType;
+  final ValueNotifier<VideoViewBuilderType> viewType;
   const PlayerVideoBuilder({
     super.key,
     this.controller,
-    this.viewType = VideoViewType.original,
+    required this.viewType,
   });
 
   @override
@@ -31,27 +31,32 @@ class PlayerVideoBuilder extends StatelessWidget {
       );
     }
     return ValueListenableBuilder(
-      valueListenable: controller!,
-      builder: (context, value, _) {
-        if (viewType == VideoViewType.original) {
-          return AspectRatio(
-            aspectRatio: value.aspectRatio,
-            child: videoView(),
-          );
-        } else if (viewType == VideoViewType.cropToFit) {
-          return SizedBox.expand(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                height: value.size.height,
-                width: value.size.width,
+      valueListenable: viewType,
+      builder: (context, viewBuilderType, _) {
+        return ValueListenableBuilder(
+          valueListenable: controller!,
+          builder: (context, value, _) {
+            if (viewBuilderType == VideoViewBuilderType.original) {
+              return AspectRatio(
+                aspectRatio: value.aspectRatio,
                 child: videoView(),
-              ),
-            ),
-          );
-        } else {
-          return videoView();
-        }
+              );
+            } else if (viewBuilderType == VideoViewBuilderType.cropToFit) {
+              return SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    height: value.size.height,
+                    width: value.size.width,
+                    child: videoView(),
+                  ),
+                ),
+              );
+            } else {
+              return videoView();
+            }
+          },
+        );
       },
     );
   }

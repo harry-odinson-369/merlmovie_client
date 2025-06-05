@@ -1,58 +1,67 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:merlmovie_client/src/extensions/context.dart';
+import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/helpers/duration.dart';
 import 'package:merlmovie_client/src/models/direct_link.dart';
 import 'package:merlmovie_client/src/models/movie.dart';
 import 'package:merlmovie_client/src/widgets/player_bottom_controls_button.dart';
 import 'package:merlmovie_client/src/widgets/player_playback_speed.dart';
+import 'package:merlmovie_client/src/widgets/player_select_episode.dart';
 import 'package:merlmovie_client/src/widgets/player_select_quality.dart';
+import 'package:merlmovie_client/src/widgets/player_select_subtitle.dart';
 import 'package:merlmovie_client/src/widgets/player_video_builder.dart';
 import 'package:video_player/video_player.dart';
 
 class PlayerBottomControls extends StatelessWidget {
   final VideoPlayerController? controller;
-  final VideoViewType viewType;
-  final double playbackSpeed;
-  final QualityItem? quality;
-  final int currentEpisode;
+  final ValueNotifier<VideoViewBuilderType>? currentViewType;
+  final double currentPlaybackSpeed;
+  final QualityItem? currentQuality;
+  final Episode? currentEpisode;
+  final SubtitleItem? currentSubtitle;
   final List<QualityItem> qualities;
-  final List<Episode> episodes;
-  final void Function(VideoViewType view)? onViewTypeChanged;
+  final List<Season> seasons;
+  final List<SubtitleItem> subtitles;
+  final void Function(VideoViewBuilderType view)? onViewTypeChanged;
   final void Function(double speed)? onPlaybackSpeedChanged;
   final void Function(QualityItem quality)? onQualityChanged;
   final void Function(Episode episode)? onEpisodeChanged;
-  final List<PlayerBottomControlsButton> Function(
-    List<PlayerBottomControlsButton> buttons,
-  )?
-  buttons;
+  final void Function(SubtitleItem subtitle)? onSubtitleChanged;
+  final void Function()? preventHideControls;
   const PlayerBottomControls({
     super.key,
-    this.quality,
-    this.currentEpisode = 0,
-    this.qualities = const [],
-    this.episodes = const [],
-    this.buttons,
     this.controller,
-    this.viewType = VideoViewType.original,
-    this.playbackSpeed = 1.0,
+    this.currentQuality,
+    this.currentEpisode,
+    this.currentSubtitle,
+    this.currentViewType,
+    this.currentPlaybackSpeed = 1.0,
+    this.qualities = const [],
+    this.seasons = const [],
+    this.subtitles = const [],
     this.onQualityChanged,
     this.onViewTypeChanged,
     this.onPlaybackSpeedChanged,
     this.onEpisodeChanged,
+    this.onSubtitleChanged,
+    this.preventHideControls,
   });
 
-  void changeView() {
-    if (viewType == VideoViewType.original) {
-      onViewTypeChanged?.call(VideoViewType.cropToFit);
-    } else if (viewType == VideoViewType.cropToFit) {
-      onViewTypeChanged?.call(VideoViewType.stretch);
+  void changeView(VideoViewBuilderType current) {
+    preventHideControls?.call();
+    if (current == VideoViewBuilderType.original) {
+      onViewTypeChanged?.call(VideoViewBuilderType.cropToFit);
+    } else if (current == VideoViewBuilderType.cropToFit) {
+      onViewTypeChanged?.call(VideoViewBuilderType.stretch);
     } else {
-      onViewTypeChanged?.call(VideoViewType.original);
+      onViewTypeChanged?.call(VideoViewBuilderType.original);
     }
   }
 
   Future changePlaybackSpeed(BuildContext context, double playbackSpeed) async {
+    preventHideControls?.call();
     double? speed = await showModalBottomSheet<double?>(
       context: context,
       isScrollControlled: true,
@@ -70,6 +79,7 @@ class PlayerBottomControls extends StatelessWidget {
     QualityItem? current,
     List<QualityItem> qualities,
   ) async {
+    preventHideControls?.call();
     QualityItem? quality = await showModalBottomSheet<QualityItem?>(
       context: context,
       isScrollControlled: true,
@@ -82,41 +92,103 @@ class PlayerBottomControls extends StatelessWidget {
     }
   }
 
+  Future changeEpisode(
+    BuildContext context,
+    List<Season> seasons,
+    Episode? current,
+  ) async {
+    preventHideControls?.call();
+    Episode? episode = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return PlayerSelectEpisodeSheet(
+          seasons: seasons,
+          currentEpisode: current,
+        );
+      },
+    );
+    if (episode != null) {
+      onEpisodeChanged?.call(episode);
+    }
+  }
+
+  Future changeSubtitle(
+    BuildContext context,
+    List<SubtitleItem> subtitles,
+    SubtitleItem? current,
+  ) async {
+    preventHideControls?.call();
+    SubtitleItem? subtitle = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return PlayerSelectSubtitle(
+          subtitles: subtitles,
+          current: current,
+          season: currentEpisode?.seasonNumber.toString(),
+          episode: currentEpisode?.episodeNumber.toString(),
+        );
+      },
+    );
+    if (subtitle != null) {
+      onSubtitleChanged?.call(subtitle);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final defaultButtons = [
-      if (episodes.isNotEmpty)
+      if (seasons.isNotEmpty)
         PlayerBottomControlsButton(
+          onTap: () {
+            final sea = seasons.firstWhereOrNull(
+              (e) => e.seasonNumber == currentEpisode?.seasonNumber,
+            );
+            final epi = sea?.episodes.firstWhereOrNull(
+              (e) => e.episodeNumber == currentEpisode?.episodeNumber,
+            );
+            changeEpisode(context, seasons, epi);
+          },
           icon: CupertinoIcons.rectangle_stack,
+          iconSize: 22,
           label: "Episodes",
         ),
       if (qualities.isNotEmpty)
         PlayerBottomControlsButton(
-          onTap: () => changeQuality(context, quality, qualities),
+          onTap: () => changeQuality(context, currentQuality, qualities),
           icon: Icons.high_quality_outlined,
           label: "Qualities",
         ),
+      if (subtitles.isNotEmpty)
+        PlayerBottomControlsButton(
+          onTap: () => changeSubtitle(context, subtitles, currentSubtitle),
+          icon: Icons.subtitles_outlined,
+          label: "Subtitles",
+        ),
+      if (currentViewType != null)
+        ValueListenableBuilder(
+          valueListenable: currentViewType!,
+          builder: (context, viewType, _) {
+            return PlayerBottomControlsButton(
+              onTap: () => changeView(viewType),
+              icon:
+                  viewType == VideoViewBuilderType.original
+                      ? Icons.crop_5_4
+                      : viewType == VideoViewBuilderType.cropToFit
+                      ? Icons.crop_free
+                      : Icons.zoom_out_map_rounded,
+              label:
+                  viewType == VideoViewBuilderType.original
+                      ? "Original"
+                      : viewType == VideoViewBuilderType.cropToFit
+                      ? "Crop to Fit"
+                      : "Stretch",
+            );
+          },
+        ),
       PlayerBottomControlsButton(
-        icon: Icons.subtitles_outlined,
-        label: "Subtitles",
-      ),
-      PlayerBottomControlsButton(
-        onTap: () => changeView(),
-        icon:
-            viewType == VideoViewType.original
-                ? Icons.crop_5_4
-                : viewType == VideoViewType.cropToFit
-                ? Icons.crop_free
-                : Icons.zoom_out_map_rounded,
-        label:
-            viewType == VideoViewType.original
-                ? "Original"
-                : viewType == VideoViewType.cropToFit
-                ? "Crop to Fit"
-                : "Stretch",
-      ),
-      PlayerBottomControlsButton(
-        onTap: () => changePlaybackSpeed(context, playbackSpeed),
+        onTap: () => changePlaybackSpeed(context, currentPlaybackSpeed),
         icon: Icons.speed_rounded,
         label: "Playback Speed",
       ),
@@ -141,11 +213,14 @@ class PlayerBottomControls extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
           barHeight: 8,
-          thumbColor: Colors.red,
-          progressBarColor: Colors.red,
+          thumbColor: context.theme.colorScheme.primary,
+          progressBarColor: context.theme.colorScheme.primary,
           baseBarColor: Colors.grey.shade700,
           bufferedBarColor: Colors.grey.shade400,
-          onSeek: (pos) => controller?.seekTo(pos),
+          onSeek: (pos) {
+            preventHideControls?.call();
+            controller?.seekTo(pos);
+          },
         ),
       );
     }
@@ -170,9 +245,7 @@ class PlayerBottomControls extends StatelessWidget {
             SizedBox(height: 12),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Row(
-                children: buttons?.call(defaultButtons) ?? defaultButtons,
-              ),
+              child: Row(children: defaultButtons),
             ),
           ],
         ),

@@ -1,8 +1,8 @@
-class MerlMovieClientPlayerConfig {
+class MerlMovieClientPlayerCallback {
   void Function()? onDecideAsWatched;
   void Function(Duration position, Duration duration)? onPositionChanged;
 
-  MerlMovieClientPlayerConfig({
+  MerlMovieClientPlayerCallback({
     this.onDecideAsWatched,
     this.onPositionChanged,
   });

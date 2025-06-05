@@ -131,18 +131,24 @@ class QualityItem {
 class SubtitleItemKey {
   String nameKey;
   String linkKey;
+  String seasonKey;
+  String episodeKey;
   SubtitleFetchExtension extension = SubtitleFetchExtension.text;
 
   SubtitleItemKey({
     required this.nameKey,
     required this.linkKey,
+    required this.seasonKey,
+    required this.episodeKey,
     this.extension = SubtitleFetchExtension.text,
   });
 
   factory SubtitleItemKey.fromMap(Map<String, dynamic> map) {
     return SubtitleItemKey(
-      nameKey: map["name"] ?? "",
-      linkKey: map["link"] ?? "",
+      nameKey: map["name"] ?? "SubFileName",
+      linkKey: map["link"] ?? "SubDownloadLink",
+      seasonKey: map["season"] ?? "SeriesSeason",
+      episodeKey: map["episode"] ?? "SeriesEpisode",
       extension:
           SubtitleFetchExtension.values.firstWhereOrNull(
             (e) => e.name.toLowerCase() == (map["extension"] ?? "text"),
@@ -154,6 +160,8 @@ class SubtitleItemKey {
   Map<String, dynamic> toMap() => {
     "name": nameKey,
     "link": linkKey,
+    "season": seasonKey,
+    "episode": episodeKey,
     "extension": extension.name,
   };
 }
@@ -161,24 +169,27 @@ class SubtitleItemKey {
 class SubtitleItem {
   String name;
   String link;
-  String? dlLink;
+  String? real_link;
   Map<String, String>? headers;
   SubtitleRootType type;
   SubtitleItemKey? key;
+
+  List<Map<String, dynamic>> children;
 
   SubtitleItem({
     required this.name,
     required this.link,
     required this.type,
     this.key,
-    this.dlLink,
+    this.real_link,
     this.headers,
+    this.children = const [],
   });
 
   factory SubtitleItem.fromMap(Map<String, dynamic> map) => SubtitleItem(
     name: map["name"] ?? "",
     link: map["link"] ?? "",
-    dlLink: map["dlLink"] ?? "",
+    real_link: map["dlLink"] ?? "",
     key: map["key"] != null ? SubtitleItemKey.fromMap(map["key"]) : null,
     type:
         SubtitleRootType.values.firstWhereOrNull(
@@ -186,14 +197,26 @@ class SubtitleItem {
         ) ??
         SubtitleRootType.normal,
     headers: MapUtilities.convert<String, String>(map["headers"]),
+    children: map["children"] ?? [],
   );
 
   Map<String, dynamic> toMap() => {
     "name": name,
     "link": link,
     "type": type.name,
-    "dlLink": dlLink,
+    "dlLink": real_link,
     "headers": headers,
     "key": key?.toMap(),
+    "children": children,
   };
+
+  @override
+  int get hashCode => link.hashCode ^ real_link.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is SubtitleItem &&
+        other.link == link &&
+        other.real_link == real_link;
+  }
 }
