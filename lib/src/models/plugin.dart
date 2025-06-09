@@ -6,7 +6,7 @@ import 'package:merlmovie_client/src/extensions/uri.dart';
 import 'package:merlmovie_client/src/helpers/color.dart';
 import 'package:merlmovie_client/src/helpers/map.dart';
 
-enum StreamType { url, webview, iframe, api, internal }
+enum StreamType { webview, iframe, api, internal }
 
 enum PluginVisibility { all, ios, android, none, development }
 
@@ -14,7 +14,10 @@ enum MediaType { multi, tv, movie }
 
 enum WebViewProviderType { webview_flutter, flutter_inappwebview }
 
+enum PluginOpenType { player, webview }
+
 class PluginModel {
+  PluginOpenType openType = PluginOpenType.player;
   Color? logoBackgroundColor;
   StreamType streamType = StreamType.internal;
   MediaType mediaType = MediaType.multi;
@@ -40,9 +43,7 @@ class PluginModel {
   bool get underDevelopment => visible == PluginVisibility.development;
 
   bool get useWebView =>
-      streamType == StreamType.url ||
-      streamType == StreamType.iframe ||
-      streamType == StreamType.webview;
+      streamType == StreamType.iframe || streamType == StreamType.webview;
 
   bool get useInternalPlayer =>
       streamType == StreamType.api || streamType == StreamType.internal;
@@ -60,6 +61,7 @@ class PluginModel {
   }
 
   PluginModel({
+    this.openType = PluginOpenType.player,
     this.streamType = StreamType.internal,
     this.mediaType = MediaType.multi,
     this.embedUrl = "",
@@ -100,7 +102,8 @@ class PluginModel {
         headers.toString() == other.headers.toString() &&
         logoBgToHex == other.logoBgToHex &&
         author == other.author &&
-        version == other.version;
+        version == other.version &&
+        openType == other.openType;
   }
 
   String get website {
@@ -131,6 +134,9 @@ class PluginModel {
     }
 
     return PluginModel(
+      openType: PluginOpenType.values.firstWhere(
+        (e) => e.name == (map["open_type"] ?? PluginOpenType.player.name),
+      ),
       streamType: StreamType.values.firstWhere(
         (e) => e.name == (map["stream_type"] ?? StreamType.internal.name),
       ),
@@ -186,6 +192,7 @@ class PluginModel {
   }
 
   Map<String, dynamic> toMap() => {
+    "open_type": openType.name,
     "stream_type": streamType.name,
     "media_type": mediaType.name,
     "embed_url": embedUrl,
@@ -227,7 +234,8 @@ class PluginModel {
       logoBackgroundColor.hashCode ^
       author.hashCode ^
       version.hashCode ^
-      query.hashCode;
+      query.hashCode ^
+      openType.hashCode;
 
   String getPlayableLink(
     String type,

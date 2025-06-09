@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart';
 import 'package:merlmovie_client/src/controllers/socket_controller.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
@@ -11,11 +13,18 @@ import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/helpers/http.dart';
 import 'package:merlmovie_client/src/helpers/information.dart';
 import 'package:merlmovie_client/src/helpers/logger.dart';
+import 'package:merlmovie_client/src/helpers/themoviedb.dart';
 import 'package:merlmovie_client/src/models/direct_link.dart';
 import 'package:merlmovie_client/src/models/embed.dart';
+import 'package:merlmovie_client/src/models/movie.dart';
+import 'package:merlmovie_client/src/models/player_callback.dart';
+import 'package:merlmovie_client/src/models/plugin.dart';
 import 'package:merlmovie_client/src/models/wss.dart';
 import 'package:merlmovie_client/src/providers/browser.dart';
 import 'package:merlmovie_client/src/widgets/browser.dart';
+import 'package:merlmovie_client/src/widgets/player.dart';
+import 'package:merlmovie_client/src/widgets/webview.dart';
+import 'package:merlmovie_client/src/widgets/webview_player.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,8 +47,12 @@ class MerlMovieClient {
     DirectLink? directLink;
     try {
       directLink = await _request(embed, onProgress: onProgress);
-    } catch(_) {}
-    directLink ??= await _request(embed, onProgress: onProgress, onError: onError);
+    } catch (_) {}
+    directLink ??= await _request(
+      embed,
+      onProgress: onProgress,
+      onError: onError,
+    );
     return directLink;
   }
 
@@ -165,7 +178,7 @@ class MerlMovieClient {
         "media_id": embed.plugin.useIMDb ? embed.imdbId : embed.tmdbId,
         "season_id": embed.season,
         "episode_id": embed.episode,
-        "data": embed.detail,
+        "data": embed.detail?.toJson(),
       };
       final streamData = WSSDataModel(
         action: WSSAction.stream,
@@ -275,5 +288,77 @@ class MerlMovieClient {
       ).toMap(),
     );
     return responseInfo;
+  }
+
+  static Future open(
+    BuildContext context,
+    PluginModel selected,
+    DetailModel detail, {
+    List<PluginModel> plugins = const [],
+    Episode? episode,
+    MerlMovieClientPlayerCallback? callback,
+    String? selectPluginSheetLabel,
+    Duration initialPosition = Duration.zero,
+    List<DeviceOrientation>? onDisposedDeviceOrientations,
+  }) async {
+    EmbedModel embed = EmbedModel(
+      plugin: selected,
+      detail: detail,
+      tmdbId: detail.id.toString(),
+      type: detail.type,
+      imdbId: detail.externalIds.imdbId,
+      season: episode?.seasonNumber.toString(),
+      episode: episode?.episodeNumber.toString(),
+      title: detail.real_title,
+      thumbnail: TheMovieDbApi.getImage(
+        detail.backdropPath,
+        TMDBImageSize.original,
+      ),
+      title_logo: TheMovieDbApi.getImage(
+        detail.real_title_logo,
+        TMDBImageSize.w500,
+      ),
+    );
+    List<PluginModel> playerPlugins =
+        plugins.where((e) => e.openType != PluginOpenType.webview).toList();
+    List<PluginModel> filtered_plugins = [
+      ...playerPlugins.where((e) => e.useInternalPlayer),
+      ...playerPlugins.where((e) => e.useWebView),
+    ];
+    if (selected.openType == PluginOpenType.player) {
+      if (selected.useWebView) {
+        return await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) {
+              return MerlMovieClientWebViewPlayer(embed: embed);
+            },
+          ),
+        );
+      } else if (selected.useInternalPlayer) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) {
+              return MerlMovieClientPlayer(
+                embed: embed,
+                callback: callback,
+                selectPluginSheetLabel: selectPluginSheetLabel,
+                plugins: filtered_plugins,
+                initialPosition: initialPosition,
+                onDisposedDeviceOrientations: onDisposedDeviceOrientations,
+                seasons: detail.seasons,
+              );
+            },
+          ),
+        );
+      }
+    } else if (selected.openType == PluginOpenType.webview) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) {
+            return WebViewPage(link: embed.requestUrl);
+          },
+        ),
+      );
+    }
   }
 }

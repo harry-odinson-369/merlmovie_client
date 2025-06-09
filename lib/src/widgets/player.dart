@@ -11,7 +11,7 @@ import 'package:merlmovie_client/src/merlmovie_client.dart';
 import 'package:merlmovie_client/src/models/direct_link.dart';
 import 'package:merlmovie_client/src/models/embed.dart';
 import 'package:merlmovie_client/src/models/movie.dart';
-import 'package:merlmovie_client/src/models/player_config.dart';
+import 'package:merlmovie_client/src/models/player_callback.dart';
 import 'package:merlmovie_client/src/models/plugin.dart';
 import 'package:merlmovie_client/src/widgets/player_bottom_controls.dart';
 import 'package:merlmovie_client/src/widgets/player_display_caption.dart';
@@ -23,6 +23,7 @@ import 'package:merlmovie_client/src/widgets/prompt_dialog.dart';
 import 'package:merlmovie_client/src/widgets/player_select_plugin.dart';
 import 'package:subtitle/subtitle.dart';
 import 'package:video_player/video_player.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 bool _isActive = false;
 
@@ -89,9 +90,6 @@ class MerlMovieClientPlayer extends StatefulWidget {
 }
 
 class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
-  MerlMovieClientPlayerCallback get config =>
-      widget.callback ?? MerlMovieClientPlayerCallback();
-
   Duration position = Duration.zero;
 
   double progress = 0;
@@ -192,7 +190,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
 
   void playerListener() {
     if (controller != null) {
-      config.onPositionChanged?.call(
+      widget.callback?.onPositionChanged?.call(
         controller!.value.position,
         controller!.value.duration,
       );
@@ -286,7 +284,10 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
         episode.episodeNumber != int.parse(widget.embed.episode!)) {
       widget.embed.season = episode.seasonNumber.toString();
       widget.embed.episode = episode.episodeNumber.toString();
-      widget.embed.thumbnail = TheMovieDbApi.getImage(episode.stillPath);
+      widget.embed.thumbnail = TheMovieDbApi.getImage(
+        episode.stillPath,
+        TMDBImageSize.original,
+      );
       position = Duration.zero;
       subtitle?.children = [];
       subtitle?.real_link = null;
@@ -335,6 +336,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     _isActive = true;
     position = widget.initialPosition;
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
+    WakelockPlus.enable();
     initialize();
   }
 
@@ -345,11 +347,12 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     MerlMovieClientPlayer.restoreDeviceOrientationAndSystemUI(
       widget.onDisposedDeviceOrientations,
     );
+    WakelockPlus.disable();
     MerlMovieClient.closeWSSConnection();
     if (controller != null) {
       if (controller!.value.position.inMinutes >=
           (controller!.value.duration.inMinutes - 10)) {
-        config.onDecideAsWatched?.call();
+        widget.callback?.onDecideAsWatched?.call();
       }
     }
     controller?.dispose();
