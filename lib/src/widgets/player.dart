@@ -139,18 +139,24 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
       if (directLink == null) {
         for (int i = 0; i < widget.plugins.length; i++) {
           if (mounted) {
+            bool isLast = (i + 1) >= widget.plugins.length;
             widget.embed.plugin = widget.plugins[i];
             update();
             if (!widget.embed.plugin.useWebView) {
               directLink = await MerlMovieClient.request(
                 widget.embed,
                 onProgress: onRequestProgress,
-                onError: (i + 1) >= widget.plugins.length ? onRequestError : null,
+                onError: isLast ? onRequestError : null,
               );
               if (directLink != null) {
                 update();
-                bool isLoaded = await tryLoad();
-                if (isLoaded) break;
+                bool isLoaded = await tryLoad(isLast);
+                if (!isLoaded) {
+                  directLink = null;
+                  update();
+                } else {
+                  break;
+                }
               }
             } else {
               restoreSystemChrome = false;
@@ -178,13 +184,13 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     update();
   }
 
-  Future<bool> tryLoad() async {
+  Future<bool> tryLoad([bool? showError]) async {
     if (mounted && directLink != null) {
       for (int i = 0; i < directLink!.qualities.length; i++) {
         final qua = directLink!.qualities[i];
         bool isLoaded = await changeQuality(
           qua,
-          (i + 1) >= directLink!.qualities.length,
+          showError ?? (i + 1) >= directLink!.qualities.length,
         );
         if (isLoaded) {
           return true;
