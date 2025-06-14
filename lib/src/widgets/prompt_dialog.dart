@@ -4,14 +4,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 
-enum PromptDialogButton { noYes, cancelOk }
+enum PromptDialogButton { noYes, cancelOk, ok }
 
-Future<bool> showPromptDialog(BuildContext context, {
+Future<bool> showPromptDialog(
+  BuildContext context, {
   required String title,
   String? subtitle,
   PromptDialogButton button = PromptDialogButton.noYes,
   TextStyle? titleStyle,
   TextStyle? subtitleStyle,
+  Color? backgroundColor,
 }) async {
   bool? accepted = await showDialog<bool?>(
     context: context,
@@ -35,6 +37,7 @@ class PromptDialog extends StatelessWidget {
   final PromptDialogButton button;
   final TextStyle? titleStyle;
   final TextStyle? subtitleStyle;
+  final Color? backgroundColor;
   const PromptDialog({
     super.key,
     required this.title,
@@ -42,44 +45,52 @@ class PromptDialog extends StatelessWidget {
     this.button = PromptDialogButton.noYes,
     this.titleStyle,
     this.subtitleStyle,
+    this.backgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> actions =
-        button == PromptDialogButton.noYes
-            ? [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
-                  "NO",
-                  style: context.theme.textTheme.titleMedium?.copyWith(
-                    color: context.theme.textTheme.titleMedium?.color
-                        ?.withOpacity(.8),
-                  ),
-                ),
+    List<Widget> actions = [
+      if (button == PromptDialogButton.noYes) ...[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(
+            "NO",
+            style: context.theme.textTheme.titleMedium?.copyWith(
+              color: context.theme.textTheme.titleMedium?.color?.withOpacity(
+                .8,
               ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text("YES", style: context.theme.textTheme.titleMedium),
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text("YES", style: context.theme.textTheme.titleMedium),
+        ),
+      ],
+      if (button == PromptDialogButton.cancelOk) ...[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(
+            "CANCEL",
+            style: context.theme.textTheme.titleMedium?.copyWith(
+              color: context.theme.textTheme.titleMedium?.color?.withOpacity(
+                .8,
               ),
-            ]
-            : [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
-                  "CANCEL",
-                  style: context.theme.textTheme.titleMedium?.copyWith(
-                    color: context.theme.textTheme.titleMedium?.color
-                        ?.withOpacity(.8),
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text("OK", style: context.theme.textTheme.titleMedium),
-              ),
-            ];
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text("OK", style: context.theme.textTheme.titleMedium),
+        ),
+      ],
+      if (button == PromptDialogButton.ok)
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text("OK", style: context.theme.textTheme.titleMedium),
+        ),
+    ];
 
     if (Platform.isIOS) {
       return CupertinoAlertDialog(
@@ -93,11 +104,13 @@ class PromptDialog extends StatelessWidget {
     } else {
       return AlertDialog(
         title: Text(title, style: titleStyle),
+        backgroundColor: backgroundColor ?? Colors.grey.shade800,
         content: SizedBox(
           width: context.maxMobileWidth,
-          child: subtitle == null
-              ? null
-              : Text(subtitle ?? "", style: subtitleStyle),
+          child:
+              subtitle == null
+                  ? null
+                  : Text(subtitle ?? "", style: subtitleStyle),
         ),
         actions: actions,
       );

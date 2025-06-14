@@ -3,25 +3,30 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_auto_admob/flutter_auto_admob.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:merlmovie_client/merlmovie_client.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/extensions/uri.dart';
 import 'package:merlmovie_client/src/widgets/player_loading.dart';
-import 'package:merlmovie_client/src/widgets/prompt_dialog.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
+bool _isActive = false;
+
 class MerlMovieClientWebViewPlayer extends StatefulWidget {
   final EmbedModel embed;
   final List<DeviceOrientation>? onDisposedDeviceOrientations;
+  final AutoAdmobConfig? adConfig;
   const MerlMovieClientWebViewPlayer({
     super.key,
     required this.embed,
     this.onDisposedDeviceOrientations,
+    this.adConfig,
   });
+
+  static bool get isActive => _isActive;
 
   @override
   State<MerlMovieClientWebViewPlayer> createState() =>
@@ -47,6 +52,8 @@ class _MerlMovieClientWebViewPlayerState
   WebViewController? webViewFlutterController;
 
   Timer? _webProgressTimer;
+
+  AutoAdmob? autoAdmob;
 
   Future createWebViewFlutterController() async {
     if (Platform.isIOS) {
@@ -110,7 +117,18 @@ class _MerlMovieClientWebViewPlayerState
       _webProgressTimer ??= Timer(const Duration(seconds: 1), () {
         isLoading = false;
         update();
+        createAutoAd();
       });
+    }
+  }
+
+  void createAutoAd() {
+    if (widget.adConfig != null && autoAdmob == null) {
+      autoAdmob = AutoAdmob();
+      autoAdmob?.initialize(config: widget.adConfig);
+      autoAdmob?.onInterstitialAdReady = () {
+        autoAdmob?.showInterstitialAd();
+      };
     }
   }
 
@@ -157,6 +175,7 @@ class _MerlMovieClientWebViewPlayerState
 
   @override
   void initState() {
+    _isActive = true;
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
     WakelockPlus.enable();
     if (widget.embed.plugin.webView == WebViewProviderType.webview_flutter) {
@@ -169,6 +188,7 @@ class _MerlMovieClientWebViewPlayerState
 
   @override
   void dispose() {
+    _isActive = false;
     MerlMovieClientPlayer.restoreDeviceOrientationAndSystemUI(
       widget.onDisposedDeviceOrientations,
     );
@@ -178,6 +198,8 @@ class _MerlMovieClientWebViewPlayerState
     webViewFlutterController = null;
     webViewKey?.currentState?.dispose();
     webViewKey = null;
+    autoAdmob?.destroy();
+    autoAdmob = null;
     super.dispose();
   }
 

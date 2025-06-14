@@ -113,6 +113,8 @@ class _BrowserWidgetState extends State<BrowserWidget> {
 
   StreamSubscription<dynamic>? subscription;
 
+  GlobalKey? webViewKey;
+
   Future initializeWeb0() async {
     if (Platform.isIOS) {
       WebKitWebViewController wk = WebKitWebViewController(
@@ -219,6 +221,7 @@ class _BrowserWidgetState extends State<BrowserWidget> {
   @override
   void initState() {
     super.initState();
+    webViewKey = GlobalKey();
     LoggerHelper.logMsg("[Browser] Spawning new instance...");
     if (widget.info.type == BrowserWebType.web_0) {
       initializeWeb0();
@@ -235,6 +238,8 @@ class _BrowserWidgetState extends State<BrowserWidget> {
     controller1?.dispose();
     subscription?.cancel();
     subscription = null;
+    webViewKey?.currentState?.dispose();
+    webViewKey = null;
     LoggerHelper.logMsg("[Browser] Instance closed!");
   }
 
@@ -251,7 +256,7 @@ class _BrowserWidgetState extends State<BrowserWidget> {
             child: SizedBox(
               height: context.screen.height,
               width: context.screen.width,
-              child: WebViewWidget(controller: controller0!),
+              child: WebViewWidget(key: webViewKey, controller: controller0!),
             ),
           ),
         if (widget.info.type == BrowserWebType.web_1)
@@ -264,6 +269,7 @@ class _BrowserWidgetState extends State<BrowserWidget> {
               height: context.screen.height,
               width: context.screen.width,
               child: InAppWebView(
+                key: webViewKey,
                 onWebViewCreated: (controller) {
                   controller1 = controller;
                   if (mounted) setState(() {});

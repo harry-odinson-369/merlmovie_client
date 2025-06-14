@@ -4,18 +4,17 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-class WebViewPage extends StatefulWidget {
+class MerlMovieClientWebViewWidget extends StatefulWidget {
   final String link;
-  const WebViewPage({super.key, required this.link});
+  const MerlMovieClientWebViewWidget({super.key, required this.link});
 
   @override
-  State<WebViewPage> createState() => _WebViewPageState();
+  State<MerlMovieClientWebViewWidget> createState() => _MerlMovieClientWebViewWidgetState();
 }
 
-class _WebViewPageState extends State<WebViewPage> {
+class _MerlMovieClientWebViewWidgetState extends State<MerlMovieClientWebViewWidget> {
   WebViewController? controller;
 
   int progress = 0;

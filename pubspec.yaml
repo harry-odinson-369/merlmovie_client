@@ -32,6 +32,10 @@ dependencies:
     git:
       ref: master
       url: https://github.com/harry-odinson-369/subtitle.git
+  flutter_auto_admob:
+    git:
+      url: https://github.com/harry-odinson-369/flutter_auto_admob.git
+      ref: main
 
 dev_dependencies:
   flutter_test:

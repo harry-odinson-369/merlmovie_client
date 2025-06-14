@@ -83,29 +83,6 @@ class PluginModel {
     this.query = const [],
   });
 
-  @override
-  bool operator ==(Object other) {
-    return other is PluginModel &&
-        name == other.name &&
-        embedUrl == other.embedUrl &&
-        tvEmbedUrl == other.tvEmbedUrl &&
-        description == other.description &&
-        streamType == other.streamType &&
-        mediaType == other.mediaType &&
-        officialWebsite == other.officialWebsite &&
-        image == other.image &&
-        script == other.script &&
-        useIMDb == other.useIMDb &&
-        docId == other.docId &&
-        webView == other.webView &&
-        allowedDomains.toSet().containsAll(other.allowedDomains) &&
-        headers.toString() == other.headers.toString() &&
-        logoBgToHex == other.logoBgToHex &&
-        author == other.author &&
-        version == other.version &&
-        openType == other.openType;
-  }
-
   String get website {
     if (officialWebsite.isNotEmpty) {
       return officialWebsite;
@@ -215,27 +192,15 @@ class PluginModel {
   };
 
   @override
-  int get hashCode =>
-      name.hashCode ^
-      embedUrl.hashCode ^
-      tvEmbedUrl.hashCode ^
-      description.hashCode ^
-      streamType.hashCode ^
-      mediaType.hashCode ^
-      officialWebsite.hashCode ^
-      image.hashCode ^
-      script.hashCode ^
-      useIMDb.hashCode ^
-      visible.hashCode ^
-      docId.hashCode ^
-      webView.hashCode ^
-      allowedDomains.hashCode ^
-      headers.hashCode ^
-      logoBackgroundColor.hashCode ^
-      author.hashCode ^
-      version.hashCode ^
-      query.hashCode ^
-      openType.hashCode;
+  bool operator ==(Object other) {
+    return other is PluginModel &&
+        name == other.name &&
+        embedUrl == other.embedUrl &&
+        tvEmbedUrl == other.tvEmbedUrl;
+  }
+
+  @override
+  int get hashCode => name.hashCode ^ embedUrl.hashCode ^ tvEmbedUrl.hashCode;
 
   String getPlayableLink(
     String type,

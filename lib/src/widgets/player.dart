@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_auto_admob/flutter_auto_admob.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
 import 'package:merlmovie_client/src/helpers/subtitle.dart';
@@ -21,6 +23,7 @@ import 'package:merlmovie_client/src/widgets/player_top_controls.dart';
 import 'package:merlmovie_client/src/widgets/player_video_builder.dart';
 import 'package:merlmovie_client/src/widgets/prompt_dialog.dart';
 import 'package:merlmovie_client/src/widgets/player_select_plugin.dart';
+import 'package:merlmovie_client/src/widgets/webview_player.dart';
 import 'package:subtitle/subtitle.dart';
 import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -35,6 +38,7 @@ class MerlMovieClientPlayer extends StatefulWidget {
   final Duration initialPosition;
   final List<Season> seasons;
   final String? selectPluginSheetLabel;
+  final AutoAdmobConfig? adConfig;
   const MerlMovieClientPlayer({
     super.key,
     required this.embed,
@@ -44,6 +48,7 @@ class MerlMovieClientPlayer extends StatefulWidget {
     this.seasons = const [],
     this.selectPluginSheetLabel,
     this.initialPosition = Duration.zero,
+    this.adConfig,
   });
 
   static bool get isActive => _isActive;
@@ -90,7 +95,11 @@ class MerlMovieClientPlayer extends StatefulWidget {
 }
 
 class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
+  AutoAdmob? autoAdmob;
+
   Duration position = Duration.zero;
+
+  bool restoreSystemChrome = true;
 
   double progress = 0;
 
@@ -115,26 +124,47 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
 
   void update() => mounted ? setState(() {}) : () {};
 
-  Future initialize() async {
+  Future initialize({bool auto_next = true}) async {
     await controller?.dispose();
+    controller = null;
     directLink = null;
     progress = 0;
     update();
     directLink = await MerlMovieClient.request(
       widget.embed,
       onProgress: onRequestProgress,
-      onError: widget.plugins.isEmpty ? onRequestError : null,
+      onError: widget.plugins.isEmpty || !auto_next ? onRequestError : null,
     );
-    if (directLink == null) {
-      for (int i = 0; i < widget.plugins.length; i++) {
-        if (mounted) {
-          widget.embed.plugin = widget.plugins[i];
-          update();
-          directLink = await MerlMovieClient.request(
-            widget.embed,
-            onProgress: onRequestProgress,
-            onError: (i + 1) >= widget.plugins.length ? onRequestError : null,
-          );
+    if (auto_next) {
+      if (directLink == null) {
+        for (int i = 0; i < widget.plugins.length; i++) {
+          if (mounted) {
+            widget.embed.plugin = widget.plugins[i];
+            update();
+            if (widget.embed.plugin.useWebView) {
+              restoreSystemChrome = false;
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) {
+                    return MerlMovieClientWebViewPlayer(
+                      embed: widget.embed,
+                      onDisposedDeviceOrientations:
+                          widget.onDisposedDeviceOrientations,
+                      adConfig: widget.adConfig,
+                    );
+                  },
+                ),
+              );
+              break;
+            } else {
+              directLink = await MerlMovieClient.request(
+                widget.embed,
+                onProgress: onRequestProgress,
+                onError:
+                    (i + 1) >= widget.plugins.length ? onRequestError : null,
+              );
+            }
+          }
         }
       }
     }
@@ -174,10 +204,14 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
         await controller?.seekTo(position);
         controller?.play().then((value) {
           hideControls.value = true;
+          createAutoAd();
         });
         update();
         return true;
       } catch (err) {
+        log(
+          "[${runtimeType.toString()}] Error loading source: ${quality.toMap()}",
+        );
         if (showError) {
           onLoadError("Player error", "${err.toString()}\n");
         }
@@ -188,6 +222,21 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     }
   }
 
+  void createAutoAd() {
+    if (widget.adConfig != null && autoAdmob == null) {
+      autoAdmob = AutoAdmob();
+      autoAdmob?.initialize(config: widget.adConfig);
+      autoAdmob?.onInterstitialAdReady = onAdReady;
+    }
+  }
+
+  void onAdReady() async {
+    bool isPlaying = controller?.value.isPlaying == true;
+    await controller?.pause();
+    await autoAdmob?.showInterstitialAd();
+    if (isPlaying) controller?.play();
+  }
+
   void playerListener() {
     if (controller != null) {
       widget.callback?.onPositionChanged?.call(
@@ -195,6 +244,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
         controller!.value.duration,
       );
       position = controller!.value.position;
+      if (autoAdmob != null) {
+        autoAdmob?.onInterstitialAdReady = onAdReady;
+      }
     }
   }
 
@@ -247,10 +299,29 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     }
   }
 
-  void onPluginChanged(PluginModel plugin) {
+  void onPluginChanged(PluginModel plugin) async {
     widget.embed.plugin = plugin;
     update();
-    initialize();
+    if (widget.embed.plugin.useWebView) {
+      restoreSystemChrome = false;
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) {
+              return MerlMovieClientWebViewPlayer(
+                embed: widget.embed,
+                onDisposedDeviceOrientations:
+                    widget.onDisposedDeviceOrientations,
+                adConfig: widget.adConfig,
+              );
+            },
+          ),
+        );
+      }
+    } else {
+      initialize(auto_next: false);
+    }
   }
 
   void onViewTypeChanged(VideoViewBuilderType type) {
@@ -330,6 +401,14 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     });
   }
 
+  Future<bool> askToExit() async {
+    bool accepted = await showPromptDialog(
+      context,
+      title: "Are you want to exit this page?",
+    );
+    return accepted;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -344,11 +423,15 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
   void dispose() {
     super.dispose();
     _isActive = false;
-    MerlMovieClientPlayer.restoreDeviceOrientationAndSystemUI(
-      widget.onDisposedDeviceOrientations,
-    );
+    if (restoreSystemChrome) {
+      MerlMovieClientPlayer.restoreDeviceOrientationAndSystemUI(
+        widget.onDisposedDeviceOrientations,
+      );
+    }
     WakelockPlus.disable();
     MerlMovieClient.closeWSSConnection();
+    autoAdmob?.destroy();
+    autoAdmob = null;
     if (controller != null) {
       if (controller!.value.position.inMinutes >=
           (controller!.value.duration.inMinutes - 10)) {
@@ -360,136 +443,141 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        toolbarHeight: 0,
-        leadingWidth: 0,
-        leading: SizedBox(),
-        backgroundColor: Colors.transparent,
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarIconBrightness: Brightness.light,
-          statusBarColor: Colors.black,
+    return WillPopScope(
+      onWillPop: () => askToExit(),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          toolbarHeight: 0,
+          leadingWidth: 0,
+          leading: SizedBox(),
+          backgroundColor: Colors.transparent,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarIconBrightness: Brightness.light,
+            statusBarColor: Colors.black,
+          ),
         ),
-      ),
-      body: GestureDetector(
-        onTap: showHideControls,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              height: context.screen.height,
-              width: context.screen.width,
-            ),
-            if (directLink != null && controller != null)
-              PlayerVideoBuilder(
-                controller: controller,
-                viewType: videoViewType,
+        body: GestureDetector(
+          onTap: showHideControls,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                height: context.screen.height,
+                width: context.screen.width,
               ),
-            if (controller != null)
-              Positioned(
-                left: 12,
-                right: 12,
-                bottom: context.screen.height * .1,
-                child: ValueListenableBuilder(
-                  valueListenable: subtitles,
-                  builder: (context, items, child) {
-                    if (items.isEmpty) {
-                      return SizedBox();
-                    }
-                    return PlayerDisplayCaption(
-                      subtitles: items,
-                      controller: controller,
-                    );
-                  },
+              if (directLink != null && controller != null)
+                PlayerVideoBuilder(
+                  controller: controller,
+                  viewType: videoViewType,
                 ),
-              ),
-            if (directLink != null && controller != null)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: ValueListenableBuilder(
-                  valueListenable: hideControls,
-                  builder: (context, isHiding, _) {
-                    return AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child:
-                          isHiding
-                              ? SizedBox(key: UniqueKey())
-                              : Container(
-                                key: UniqueKey(),
-                                color: Colors.black.withOpacity(.7),
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    PlayerTopControls(
-                                      embed: widget.embed,
-                                      controller: controller,
-                                      onTrailingClicked:
-                                          widget.plugins.isNotEmpty
-                                              ? onTrailingClicked
-                                              : null,
-                                      trailing:
-                                          widget.plugins.isNotEmpty
-                                              ? Icon(
-                                                Icons.format_list_bulleted,
-                                                color: Colors.white,
-                                              )
-                                              : null,
-                                      preventHideControls: preventHideControls,
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 24),
-                                      child: PlayerMiddleControls(
+              if (controller != null)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: context.screen.height * .1,
+                  child: ValueListenableBuilder(
+                    valueListenable: subtitles,
+                    builder: (context, items, child) {
+                      if (items.isEmpty) {
+                        return SizedBox();
+                      }
+                      return PlayerDisplayCaption(
+                        subtitles: items,
+                        controller: controller,
+                      );
+                    },
+                  ),
+                ),
+              if (directLink != null && controller != null)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: ValueListenableBuilder(
+                    valueListenable: hideControls,
+                    builder: (context, isHiding, _) {
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child:
+                            isHiding
+                                ? SizedBox(key: UniqueKey())
+                                : Container(
+                                  key: UniqueKey(),
+                                  color: Colors.black.withOpacity(.7),
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      PlayerTopControls(
+                                        embed: widget.embed,
                                         controller: controller,
+                                        onTrailingClicked:
+                                            widget.plugins.isNotEmpty
+                                                ? onTrailingClicked
+                                                : null,
+                                        trailing:
+                                            widget.plugins.isNotEmpty
+                                                ? Icon(
+                                                  Icons.format_list_bulleted,
+                                                  color: Colors.white,
+                                                )
+                                                : null,
                                         preventHideControls:
                                             preventHideControls,
                                       ),
-                                    ),
-                                    PlayerBottomControls(
-                                      controller: controller,
-                                      currentViewType: videoViewType,
-                                      currentPlaybackSpeed: playbackSpeed,
-                                      currentQuality: currentQuality,
-                                      currentEpisode: widget.seasons
-                                          .findCurrentEpisode(widget.embed),
-                                      qualities: directLink?.qualities ?? [],
-                                      seasons: widget.seasons,
-                                      currentSubtitle: subtitle,
-                                      subtitles: directLink?.subtitles ?? [],
-                                      onPlaybackSpeedChanged:
-                                          onPlaybackSpeedChanged,
-                                      onViewTypeChanged: onViewTypeChanged,
-                                      onQualityChanged: onQualityChanged,
-                                      onEpisodeChanged: onEpisodeChanged,
-                                      onSubtitleChanged: onSubtitleChanged,
-                                      preventHideControls: preventHideControls,
-                                    ),
-                                  ],
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 24),
+                                        child: PlayerMiddleControls(
+                                          controller: controller,
+                                          preventHideControls:
+                                              preventHideControls,
+                                        ),
+                                      ),
+                                      PlayerBottomControls(
+                                        controller: controller,
+                                        currentViewType: videoViewType,
+                                        currentPlaybackSpeed: playbackSpeed,
+                                        currentQuality: currentQuality,
+                                        currentEpisode: widget.seasons
+                                            .findCurrentEpisode(widget.embed),
+                                        qualities: directLink?.qualities ?? [],
+                                        seasons: widget.seasons,
+                                        currentSubtitle: subtitle,
+                                        subtitles: directLink?.subtitles ?? [],
+                                        onPlaybackSpeedChanged:
+                                            onPlaybackSpeedChanged,
+                                        onViewTypeChanged: onViewTypeChanged,
+                                        onQualityChanged: onQualityChanged,
+                                        onEpisodeChanged: onEpisodeChanged,
+                                        onSubtitleChanged: onSubtitleChanged,
+                                        preventHideControls:
+                                            preventHideControls,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            if (directLink == null)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: PlayerLoading(
-                  embed: widget.embed,
-                  progress: progress,
-                  plugins: widget.plugins,
-                  sheetLabel: widget.selectPluginSheetLabel,
-                  onPluginChanged: onPluginChanged,
+              if (directLink == null)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: PlayerLoading(
+                    embed: widget.embed,
+                    progress: progress,
+                    plugins: widget.plugins,
+                    sheetLabel: widget.selectPluginSheetLabel,
+                    onPluginChanged: onPluginChanged,
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
