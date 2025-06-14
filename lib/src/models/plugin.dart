@@ -208,6 +208,7 @@ class PluginModel {
     String imdbId, [
     String? season,
     String? episode,
+    String? otherId,
   ]) {
     bool isUseTVEmbedUrl = (type == "tv" && tvEmbedUrl.isNotEmpty);
     String link = isUseTVEmbedUrl ? tvEmbedUrl : embedUrl;
@@ -215,7 +216,7 @@ class PluginModel {
       link = link.replaceAll("{t}", type);
     }
     if (link.contains("{i}")) {
-      link = link.replaceAll("{i}", useIMDb ? imdbId : tmdbId);
+      link = link.replaceAll("{i}", otherId ?? (useIMDb ? imdbId : tmdbId));
     }
     if (link.contains("{s}") && season != null) {
       link = link.replaceAll("{s}", season);

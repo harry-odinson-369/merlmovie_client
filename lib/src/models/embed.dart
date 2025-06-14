@@ -5,7 +5,7 @@ class EmbedModel {
   String type = "movie";
   String tmdbId = "";
   String imdbId = "";
-  String? season, episode, title, thumbnail, title_logo;
+  String? season, episode, title, thumbnail, title_logo, other_id;
   DetailModel? detail;
   PluginModel plugin = PluginModel.fromMap({});
 
@@ -28,7 +28,7 @@ class EmbedModel {
       "$type-$tmdbId-$imdbId-$season-$episode-${plugin.hashCode}";
 
   String get requestUrl =>
-      plugin.getPlayableLink(type, tmdbId, imdbId, season, episode);
+      plugin.getPlayableLink(type, tmdbId, imdbId, season, episode, other_id);
 
   bool get isWSS =>
       requestUrl.startsWith("ws://") || requestUrl.startsWith("wss://");
