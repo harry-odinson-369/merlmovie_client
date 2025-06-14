@@ -37,6 +37,16 @@ class _PlayerPlayPauseState extends State<PlayerPlayPause>
     widget.preventHideControls?.call();
   }
 
+  void listener() {
+    if (mounted) {
+      if (widget.controller?.value.isPlaying == true) {
+        _animationController?.animateTo(1.0);
+      } else {
+        _animationController?.animateTo(0.0);
+      }
+    }
+  }
+
   @override
   void initState() {
     _animationController = AnimationController(
@@ -48,6 +58,7 @@ class _PlayerPlayPauseState extends State<PlayerPlayPause>
       if (widget.controller!.value.isCompleted) {
         _isPaused = widget.controller!.value.isCompleted;
       }
+      widget.controller?.addListener(listener);
     }
     if (mounted) setState(() {});
     super.initState();
@@ -56,18 +67,12 @@ class _PlayerPlayPauseState extends State<PlayerPlayPause>
   @override
   void dispose() {
     _animationController?.dispose();
+    widget.controller?.removeListener(listener);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    Widget circular = SizedBox(
-      key: Key("__buffering"),
-      width: widget.size * 1.4,
-      height: widget.size * 1.4,
-      child: const CircularProgressIndicator(color: Colors.white),
-    );
-
     return InkWell(
       onTap: playPause,
       splashFactory: NoSplash.splashFactory,
@@ -76,7 +81,12 @@ class _PlayerPlayPauseState extends State<PlayerPlayPause>
       child: Builder(
         builder: (context) {
           if (widget.controller == null) {
-            return circular;
+            return SizedBox(
+              key: Key("__buffering_1"),
+              width: widget.size * 1.4,
+              height: widget.size * 1.4,
+              child: const CircularProgressIndicator(color: Colors.white),
+            );
           }
           return ValueListenableBuilder(
             valueListenable: widget.controller!,
@@ -88,20 +98,22 @@ class _PlayerPlayPauseState extends State<PlayerPlayPause>
                   color: Colors.redAccent,
                 );
               } else {
-                if (value.isPlaying == true) {
-                  _animationController?.animateTo(1.0);
-                } else {
-                  _animationController?.animateTo(0.0);
-                }
-
                 bool isLoading =
                     (value.isBuffering || (!value.isInitialized && !_isPaused));
 
                 return AnimatedSwitcher(
+                  key: Key("__play_pause_switcher"),
                   duration: const Duration(milliseconds: 300),
                   child:
                       isLoading || _animationController == null
-                          ? circular
+                          ? SizedBox(
+                            key: Key("__buffering"),
+                            width: widget.size * 1.4,
+                            height: widget.size * 1.4,
+                            child: const CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                          )
                           : AnimatedIcon(
                             key: Key("__play_pause"),
                             icon: AnimatedIcons.play_pause,

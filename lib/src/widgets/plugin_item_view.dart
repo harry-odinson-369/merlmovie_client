@@ -30,16 +30,16 @@ class PluginItemView extends StatelessWidget {
             if (!isSelected) SizedBox(width: 26),
             SizedBox(width: 24),
             Container(
-              padding: EdgeInsets.all(2),
+              padding: EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: plugin.logoBackgroundColor,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: CachedNetworkImage(
                 imageUrl: plugin.image,
                 fit: BoxFit.contain,
-                height: 36,
-                width: 36,
+                height: 38,
+                width: 38,
                 errorWidget:
                     (context, url, error) =>
                         Icon(Icons.link, size: 32, color: Colors.white),
