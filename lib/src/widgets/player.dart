@@ -141,7 +141,18 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
           if (mounted) {
             widget.embed.plugin = widget.plugins[i];
             update();
-            if (widget.embed.plugin.useWebView) {
+            if (!widget.embed.plugin.useWebView) {
+              directLink = await MerlMovieClient.request(
+                widget.embed,
+                onProgress: onRequestProgress,
+                onError: (i + 1) >= widget.plugins.length ? onRequestError : null,
+              );
+              if (directLink != null) {
+                update();
+                bool isLoaded = await tryLoad();
+                if (isLoaded) break;
+              }
+            } else {
               restoreSystemChrome = false;
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
@@ -156,19 +167,18 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
                 ),
               );
               break;
-            } else {
-              directLink = await MerlMovieClient.request(
-                widget.embed,
-                onProgress: onRequestProgress,
-                onError:
-                    (i + 1) >= widget.plugins.length ? onRequestError : null,
-              );
             }
           }
         }
+      } else {
+        await tryLoad();
       }
     }
+    if (!auto_next) await tryLoad();
     update();
+  }
+
+  Future<bool> tryLoad() async {
     if (mounted && directLink != null) {
       for (int i = 0; i < directLink!.qualities.length; i++) {
         final qua = directLink!.qualities[i];
@@ -177,10 +187,11 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
           (i + 1) >= directLink!.qualities.length,
         );
         if (isLoaded) {
-          break;
+          return true;
         }
       }
     }
+    return false;
   }
 
   Future<bool> changeQuality(
@@ -231,6 +242,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
   }
 
   void onAdReady() async {
+    log("[${runtimeType.toString()}] Ad is ready!");
     bool isPlaying = controller?.value.isPlaying == true;
     await controller?.pause();
     await autoAdmob?.showInterstitialAd();
@@ -244,9 +256,6 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
         controller!.value.duration,
       );
       position = controller!.value.position;
-      if (autoAdmob != null) {
-        autoAdmob?.onInterstitialAdReady = onAdReady;
-      }
     }
   }
 
