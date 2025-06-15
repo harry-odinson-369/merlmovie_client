@@ -34,6 +34,9 @@ SocketController? _controller;
 class MerlMovieClient {
   static SocketController? get socket => _controller;
 
+  static bool get isPlayerActive =>
+      MerlMovieClientPlayer.isActive && MerlMovieClientWebViewPlayer.isActive;
+
   static Future closeWSSConnection() async {
     await _controller?.close();
     _controller = null;
