@@ -239,14 +239,16 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
   }
 
   Future create_video_controller(QualityItem quality) async {
-    while (true) {
-      if (!await MerlMovieHttpProxyService.isServing) {
-        await MerlMovieHttpProxyService.background_serve();
-      } else {
-        break;
-      }
-    }
     if (quality.use_proxy) {
+      while (true) {
+        if (!await MerlMovieHttpProxyService.isServing) {
+          await MerlMovieHttpProxyService.background_serve();
+          await Future.delayed(const Duration(seconds: 1));
+        } else {
+          break;
+        }
+      }
+      log("\n[${runtimeType.toString()}] Create VideoPlayerController with proxy.\n");
       return VideoPlayerController.networkUrl(
         Uri.parse(
           MerlMovieHttpProxyService.create_proxy_url(
