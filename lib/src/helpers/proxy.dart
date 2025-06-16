@@ -57,7 +57,7 @@ class MerlMovieHttpProxyService {
     );
   }
 
-  static Future<HttpServer> serve() => io.serve(_handler, hostname, port);
+  static Future<HttpServer> serve() => io.serve(_intercept_handler, hostname, port);
 
   static Future<Isolate> background_serve([int? PORT, String? HOSTNAME]) async {
     return Isolate.spawn<Map<String, dynamic>>(_background_serve, {
