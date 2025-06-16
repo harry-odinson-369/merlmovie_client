@@ -12,6 +12,7 @@ export './src/widgets/webview_player.dart';
 export './src/widgets/player.dart';
 export './src/models/player_callback.dart';
 export './src/models/movie.dart';
+export './src/helpers/proxy.dart';
 export 'package:wakelock_plus/wakelock_plus.dart' show WakelockPlus;
 export 'package:provider/provider.dart' show ChangeNotifierProvider;
 export 'package:flutter_auto_admob/flutter_auto_admob.dart' show AutoAdmobConfig;

@@ -112,19 +112,27 @@ class QualityItem {
   String name;
   String link;
   Map<String, String>? headers;
+  bool use_proxy = false;
 
-  QualityItem({required this.name, required this.link, this.headers});
+  QualityItem({
+    required this.name,
+    required this.link,
+    this.headers,
+    this.use_proxy = false,
+  });
 
   factory QualityItem.fromMap(Map<String, dynamic> map) => QualityItem(
     name: map["name"] ?? "",
     link: map["link"] ?? "",
     headers: MapUtilities.convert<String, String>(map["headers"]),
+    use_proxy: map["use_proxy"] ?? false,
   );
 
   Map<String, dynamic> toMap() => {
     "name": name,
     "link": link,
     "headers": headers,
+    "use_proxy": use_proxy,
   };
 }
 

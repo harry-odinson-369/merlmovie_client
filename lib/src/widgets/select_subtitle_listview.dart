@@ -7,7 +7,7 @@ import 'package:merlmovie_client/src/widgets/scroll_to_index.dart';
 class SelectSubtitleListview extends StatefulWidget {
   final List<SubtitleItem> subtitles;
   final SubtitleItem? current;
-  final void Function(SubtitleItem subtitle)? onChanged;
+  final void Function(SubtitleItem? subtitle)? onChanged;
   const SelectSubtitleListview({
     super.key,
     required this.subtitles,
@@ -54,6 +54,38 @@ class _SelectSubtitleListviewState extends State<SelectSubtitleListview> {
       controller: autoScrollController,
       padding: EdgeInsets.symmetric(horizontal: 12),
       children: [
+        InkWell(
+          onTap: () {
+            widget.onChanged?.call(null);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: [
+                SizedBox(width: 24),
+                if (widget.current == null)
+                  Icon(
+                    Icons.done,
+                    size: 26,
+                    color: Colors.white,
+                  ),
+                if (widget.current != null) SizedBox(width: 26),
+                SizedBox(width: 24),
+                Flexible(
+                  child: Text(
+                    "Off",
+                    maxLines: 2,
+                    style: context.theme.textTheme.titleMedium
+                        ?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         ...widget.subtitles.build((e, i) {
           bool isSelected = widget.current?.link == e.link;
           return InkWell(

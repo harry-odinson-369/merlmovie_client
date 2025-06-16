@@ -2,6 +2,7 @@ name: merlmovie_client
 description: "A MerlMovie Client Request to the merlmovie-sdk."
 version: 0.0.1
 homepage: https://github.com/harry-odinson-369/merlmovie_client
+publish_to: none
 
 environment:
   sdk: ^3.7.0
@@ -20,7 +21,6 @@ dependencies:
   webview_flutter_android: ^4.3.2
   provider: ^6.1.5
   shared_preferences: ^2.5.3
-  video_player: ^2.9.5
   flutter_svg: ^2.1.0
   google_fonts: ^6.2.1
   audio_video_progress_bar: ^2.0.3
@@ -28,6 +28,8 @@ dependencies:
   cached_network_image: ^3.4.1
   archive: ^4.0.5
   wakelock_plus: ^1.2.8
+  shelf: ^1.4.2
+  flutter_hls_parser: ^2.0.1
   subtitle:
     git:
       ref: master
@@ -35,6 +37,10 @@ dependencies:
   flutter_auto_admob:
     git:
       url: https://github.com/harry-odinson-369/flutter_auto_admob.git
+      ref: main
+  video_player:
+    git:
+      url: https://github.com/harry-odinson-369/video_player.git
       ref: main
 
 dev_dependencies:

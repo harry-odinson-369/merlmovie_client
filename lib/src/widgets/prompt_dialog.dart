@@ -14,6 +14,7 @@ Future<bool> showPromptDialog(
   TextStyle? titleStyle,
   TextStyle? subtitleStyle,
   Color? backgroundColor,
+  bool scrollableSubtitle = false,
 }) async {
   bool? accepted = await showDialog<bool?>(
     context: context,
@@ -24,6 +25,8 @@ Future<bool> showPromptDialog(
         button: button,
         titleStyle: titleStyle,
         subtitleStyle: subtitleStyle,
+        scrollableSubtitle: scrollableSubtitle,
+        backgroundColor: backgroundColor,
       );
     },
   );
@@ -38,6 +41,7 @@ class PromptDialog extends StatelessWidget {
   final TextStyle? titleStyle;
   final TextStyle? subtitleStyle;
   final Color? backgroundColor;
+  final bool scrollableSubtitle;
   const PromptDialog({
     super.key,
     required this.title,
@@ -46,6 +50,7 @@ class PromptDialog extends StatelessWidget {
     this.titleStyle,
     this.subtitleStyle,
     this.backgroundColor,
+    this.scrollableSubtitle = false,
   });
 
   @override
@@ -110,6 +115,10 @@ class PromptDialog extends StatelessWidget {
           child:
               subtitle == null
                   ? null
+                  : scrollableSubtitle
+                  ? SingleChildScrollView(
+                    child: Text(subtitle ?? "", style: subtitleStyle),
+                  )
                   : Text(subtitle ?? "", style: subtitleStyle),
         ),
         actions: actions,

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_auto_admob/flutter_auto_admob.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
+import 'package:merlmovie_client/src/helpers/proxy.dart';
 import 'package:merlmovie_client/src/helpers/subtitle.dart';
 import 'package:merlmovie_client/src/helpers/themoviedb.dart';
 import 'package:merlmovie_client/src/merlmovie_client.dart';
@@ -139,7 +140,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
       if (directLink == null) {
         for (int i = 0; i < widget.plugins.length; i++) {
           if (mounted) {
-            bool isLast = (i + 1) >= widget.plugins.length;
+            bool isLast = i + 1 >= widget.plugins.length;
             widget.embed.plugin = widget.plugins[i];
             update();
             if (!widget.embed.plugin.useWebView) {
@@ -209,15 +210,11 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
         await controller?.dispose();
         controller = null;
         currentQuality = quality;
-        controller = VideoPlayerController.networkUrl(
-          Uri.parse(quality.link),
-          httpHeaders: quality.headers ?? {},
-        );
-        hideControls.value = false;
+        controller = await create_video_controller(quality);
         update();
+        hideControls.value = false;
         await controller?.initialize();
         controller?.addListener(playerListener);
-        update();
         await controller?.seekTo(position);
         controller?.play().then((value) {
           hideControls.value = true;
@@ -226,16 +223,43 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
         update();
         return true;
       } catch (err) {
+        log(err.toString());
         log(
           "[${runtimeType.toString()}] Error loading source: ${quality.toMap()}",
         );
         if (showError) {
           onLoadError("Player error", "${err.toString()}\n");
         }
+        hideControls.value = false;
         return false;
       }
     } else {
       return true;
+    }
+  }
+
+  Future create_video_controller(QualityItem quality) async {
+    while (true) {
+      if (!await MerlMovieHttpProxyService.isServing) {
+        await MerlMovieHttpProxyService.background_serve();
+      } else {
+        break;
+      }
+    }
+    if (quality.use_proxy) {
+      return VideoPlayerController.networkUrl(
+        Uri.parse(
+          MerlMovieHttpProxyService.create_proxy_url(
+            quality.link,
+            quality.headers,
+          ),
+        ),
+      );
+    } else {
+      return VideoPlayerController.networkUrl(
+        Uri.parse(quality.link),
+        httpHeaders: quality.headers ?? {},
+      );
     }
   }
 
@@ -262,6 +286,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
         controller!.value.duration,
       );
       position = controller!.value.position;
+      if (!controller!.value.isPlaying) {
+        hideControls.value = false;
+      }
     }
   }
 
@@ -271,6 +298,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
   }
 
   Future onRequestError(int status, String message) async {
+    hideControls.value = false;
     bool? accepted = await showPromptDialog(
       context,
       title: "Error code $status",
@@ -298,6 +326,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
       title: title,
       subtitle:
           "$message${widget.plugins.isNotEmpty ? "\nWould you like to change the source?" : ""}",
+      scrollableSubtitle: true,
     );
     if (accepted) {
       if (mounted) {
@@ -383,10 +412,12 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     }
   }
 
-  Future onSubtitleChanged(SubtitleItem subtitle) async {
-    if (subtitle != this.subtitle) {
-      this.subtitle = subtitle;
-      update();
+  Future onSubtitleChanged(SubtitleItem? subtitle) async {
+    this.subtitle = subtitle;
+    update();
+    if (subtitle == null) {
+      subtitles.value = [];
+    } else {
       List<Subtitle> arr = await compute((subtitle) async {
         bool isFetch = subtitle.type == SubtitleRootType.fetch;
         String link = subtitle.real_link ?? subtitle.link;
@@ -404,6 +435,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
   }
 
   void showHideControls() {
+    if (controller?.value.isPlaying != true) return;
     hideControls.value = !hideControls.value;
     preventHideControls();
   }
@@ -412,7 +444,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     _hideControlsTimer?.cancel();
     _hideControlsTimer = null;
     _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-      hideControls.value = true;
+      hideControls.value = controller?.value.isPlaying == true;
     });
   }
 
@@ -424,11 +456,23 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     return accepted;
   }
 
+  void hideControlsListener() {
+    if (!hideControls.value) {
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: [SystemUiOverlay.top],
+      );
+    } else {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _isActive = true;
     position = widget.initialPosition;
+    hideControls.addListener(hideControlsListener);
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
     WakelockPlus.enable();
     initialize();
@@ -447,6 +491,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     MerlMovieClient.closeWSSConnection();
     autoAdmob?.destroy();
     autoAdmob = null;
+    hideControls.removeListener(hideControlsListener);
     if (controller != null) {
       if (controller!.value.position.inMinutes >=
           (controller!.value.duration.inMinutes - 10)) {
@@ -462,6 +507,8 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
       onWillPop: () => askToExit(),
       child: Scaffold(
         backgroundColor: Colors.black,
+        extendBodyBehindAppBar: true,
+        extendBody: true,
         appBar: AppBar(
           toolbarHeight: 0,
           leadingWidth: 0,
@@ -469,7 +516,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
           backgroundColor: Colors.transparent,
           systemOverlayStyle: SystemUiOverlayStyle(
             statusBarIconBrightness: Brightness.light,
-            statusBarColor: Colors.black,
+            statusBarColor: Colors.transparent,
           ),
         ),
         body: GestureDetector(
@@ -481,7 +528,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
                 height: context.screen.height,
                 width: context.screen.width,
               ),
-              if (directLink != null && controller != null)
+              if (controller != null)
                 PlayerVideoBuilder(
                   controller: controller,
                   viewType: videoViewType,
@@ -504,79 +551,76 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
                     },
                   ),
                 ),
-              if (directLink != null && controller != null)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: ValueListenableBuilder(
-                    valueListenable: hideControls,
-                    builder: (context, isHiding, _) {
-                      return AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child:
-                            isHiding
-                                ? SizedBox(key: UniqueKey())
-                                : Container(
-                                  key: UniqueKey(),
-                                  color: Colors.black.withOpacity(.7),
-                                  child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      PlayerTopControls(
-                                        embed: widget.embed,
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: ValueListenableBuilder(
+                  valueListenable: hideControls,
+                  builder: (context, isHiding, _) {
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child:
+                          isHiding
+                              ? SizedBox(key: UniqueKey())
+                              : Container(
+                                key: UniqueKey(),
+                                color: Colors.black.withOpacity(.7),
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    PlayerTopControls(
+                                      embed: widget.embed,
+                                      controller: controller,
+                                      onTrailingClicked:
+                                          widget.plugins.isNotEmpty
+                                              ? onTrailingClicked
+                                              : null,
+                                      trailing:
+                                          widget.plugins.isNotEmpty
+                                              ? Icon(
+                                                Icons.format_list_bulleted,
+                                                color: Colors.white,
+                                              )
+                                              : null,
+                                      preventHideControls: preventHideControls,
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 24),
+                                      child: PlayerMiddleControls(
                                         controller: controller,
-                                        onTrailingClicked:
-                                            widget.plugins.isNotEmpty
-                                                ? onTrailingClicked
-                                                : null,
-                                        trailing:
-                                            widget.plugins.isNotEmpty
-                                                ? Icon(
-                                                  Icons.format_list_bulleted,
-                                                  color: Colors.white,
-                                                )
-                                                : null,
                                         preventHideControls:
                                             preventHideControls,
                                       ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 24),
-                                        child: PlayerMiddleControls(
-                                          controller: controller,
-                                          preventHideControls:
-                                              preventHideControls,
-                                        ),
-                                      ),
-                                      PlayerBottomControls(
-                                        controller: controller,
-                                        currentViewType: videoViewType,
-                                        currentPlaybackSpeed: playbackSpeed,
-                                        currentQuality: currentQuality,
-                                        currentEpisode: widget.seasons
-                                            .findCurrentEpisode(widget.embed),
-                                        qualities: directLink?.qualities ?? [],
-                                        seasons: widget.seasons,
-                                        currentSubtitle: subtitle,
-                                        subtitles: directLink?.subtitles ?? [],
-                                        onPlaybackSpeedChanged:
-                                            onPlaybackSpeedChanged,
-                                        onViewTypeChanged: onViewTypeChanged,
-                                        onQualityChanged: onQualityChanged,
-                                        onEpisodeChanged: onEpisodeChanged,
-                                        onSubtitleChanged: onSubtitleChanged,
-                                        preventHideControls:
-                                            preventHideControls,
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                    PlayerBottomControls(
+                                      controller: controller,
+                                      currentViewType: videoViewType,
+                                      currentPlaybackSpeed: playbackSpeed,
+                                      currentQuality: currentQuality,
+                                      currentEpisode: widget.seasons
+                                          .findCurrentEpisode(widget.embed),
+                                      qualities: directLink?.qualities ?? [],
+                                      seasons: widget.seasons,
+                                      currentSubtitle: subtitle,
+                                      subtitles: directLink?.subtitles ?? [],
+                                      onPlaybackSpeedChanged:
+                                          onPlaybackSpeedChanged,
+                                      onViewTypeChanged: onViewTypeChanged,
+                                      onQualityChanged: onQualityChanged,
+                                      onEpisodeChanged: onEpisodeChanged,
+                                      onSubtitleChanged: onSubtitleChanged,
+                                      preventHideControls: preventHideControls,
+                                    ),
+                                  ],
                                 ),
-                      );
-                    },
-                  ),
+                              ),
+                    );
+                  },
                 ),
+              ),
               if (directLink == null)
                 Positioned(
                   top: 0,

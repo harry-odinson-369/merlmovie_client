@@ -29,7 +29,11 @@ class _PlayerSelectSubtitleState extends State<PlayerSelectSubtitle> {
 
   void update() => mounted ? setState(() {}) : () {};
 
-  void onSubtitleSelected(SubtitleItem subtitle) {
+  void onSubtitleSelected(SubtitleItem? subtitle) {
+    if (subtitle == null) {
+      Navigator.of(context).pop(null);
+      return;
+    }
     if (subtitle.type == SubtitleRootType.normal) {
       if (subtitle != widget.current) {
         Navigator.of(context).pop(subtitle);
@@ -48,7 +52,7 @@ class _PlayerSelectSubtitleState extends State<PlayerSelectSubtitle> {
     }
   }
 
-  void onSubtitleChildSelected(SubtitleItem subtitle) {
+  void onSubtitleChildSelected(SubtitleItem? subtitle) {
     if (subtitle != widget.current) {
       Navigator.of(context).pop(subtitle);
     } else {

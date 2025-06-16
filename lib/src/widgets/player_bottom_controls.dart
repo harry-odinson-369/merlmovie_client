@@ -28,7 +28,7 @@ class PlayerBottomControls extends StatelessWidget {
   final void Function(double speed)? onPlaybackSpeedChanged;
   final void Function(QualityItem quality)? onQualityChanged;
   final void Function(Episode episode)? onEpisodeChanged;
-  final void Function(SubtitleItem subtitle)? onSubtitleChanged;
+  final void Function(SubtitleItem? subtitle)? onSubtitleChanged;
   final void Function()? preventHideControls;
   const PlayerBottomControls({
     super.key,
@@ -131,9 +131,7 @@ class PlayerBottomControls extends StatelessWidget {
         );
       },
     );
-    if (subtitle != null) {
-      onSubtitleChanged?.call(subtitle);
-    }
+    onSubtitleChanged?.call(subtitle);
   }
 
   @override
