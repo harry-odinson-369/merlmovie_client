@@ -34,11 +34,12 @@ class PlayerTopControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 12, top: 12),
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 26),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           SafeArea(
+            top: false,
             bottom: false,
             child: IconButton(
               onPressed: () {
@@ -64,6 +65,7 @@ class PlayerTopControls extends StatelessWidget {
             ),
           ),
           SafeArea(
+            top: false,
             bottom: false,
             child: IconButton(
               onPressed:

@@ -330,6 +330,7 @@ class MerlMovieClient {
     Duration initialPosition = Duration.zero,
     List<DeviceOrientation>? onDisposedDeviceOrientations,
     AutoAdmobConfig? adConfig,
+    Future<DetailModel> Function(MovieModel movie)? onRequestDetail,
   }) async {
     EmbedModel embed = create_embed(selected, detail, episode);
     List<PluginModel> playerPlugins =
@@ -365,8 +366,10 @@ class MerlMovieClient {
                 seasons: detail.seasons,
                 plugins: filtered_plugins,
                 initialPosition: initialPosition,
+                onRequestDetail: onRequestDetail,
                 selectPluginSheetLabel: selectPluginSheetLabel,
                 onDisposedDeviceOrientations: onDisposedDeviceOrientations,
+                similar: onRequestDetail != null ? detail.similar.results : [],
               );
             },
           ),

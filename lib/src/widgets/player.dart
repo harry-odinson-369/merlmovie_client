@@ -38,19 +38,28 @@ class MerlMovieClientPlayer extends StatefulWidget {
   final List<PluginModel> plugins;
   final Duration initialPosition;
   final List<Season> seasons;
+  final List<MovieModel> similar;
   final String? selectPluginSheetLabel;
   final AutoAdmobConfig? adConfig;
-  const MerlMovieClientPlayer({
+  final Future<DetailModel> Function(MovieModel movie)? onRequestDetail;
+  MerlMovieClientPlayer({
     super.key,
     required this.embed,
     this.callback,
     this.onDisposedDeviceOrientations,
     this.plugins = const [],
     this.seasons = const [],
+    this.similar = const [],
     this.selectPluginSheetLabel,
     this.initialPosition = Duration.zero,
     this.adConfig,
-  });
+    this.onRequestDetail,
+  }) {
+    assert(
+      similar.isEmpty && onRequestDetail == null,
+      "You must be provide both similar & onRequestDetail properties.",
+    );
+  }
 
   static bool get isActive => _isActive;
 
@@ -167,6 +176,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       );
       return true;
     } else {
+      await MerlMovieClient.closeWSSConnection();
       directLink = null;
       await controller?.dispose();
       controller = null;
@@ -607,8 +617,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                                               : null,
                                       preventHideControls: preventHideControls,
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 24),
+                                    Center(
                                       child: PlayerMiddleControls(
                                         controller: controller,
                                         isInitializing: isInitializing,
