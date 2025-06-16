@@ -9,10 +9,14 @@ import 'package:video_player/video_player.dart';
 class PlayerMiddleControls extends StatelessWidget {
   final VideoPlayerController? controller;
   final void Function()? preventHideControls;
+  final ValueNotifier<bool> isInitializing;
+  final AnimationController? animationController;
   const PlayerMiddleControls({
     super.key,
     this.controller,
     this.preventHideControls,
+    required this.isInitializing,
+    this.animationController,
   });
 
   Future forward15Second() async {
@@ -68,6 +72,8 @@ class PlayerMiddleControls extends StatelessWidget {
         PlayerPlayPause(
           controller: controller,
           preventHideControls: preventHideControls,
+          isInitializing: isInitializing,
+          animationController: animationController,
         ),
         Stack(
           alignment: Alignment.center,

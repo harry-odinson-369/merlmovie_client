@@ -95,7 +95,8 @@ class MerlMovieClientPlayer extends StatefulWidget {
   State<MerlMovieClientPlayer> createState() => _MerlMovieClientPlayerState();
 }
 
-class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
+class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
+    with TickerProviderStateMixin {
   AutoAdmob? autoAdmob;
 
   Duration position = Duration.zero;
@@ -105,6 +106,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
   double progress = 0;
 
   ValueNotifier<bool> hideControls = ValueNotifier<bool>(false);
+  ValueNotifier<bool> isInitializing = ValueNotifier<bool>(true);
 
   double playbackSpeed = 1.0;
 
@@ -123,75 +125,82 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
 
   Timer? _hideControlsTimer;
 
+  AnimationController? _animationController;
+
   void update() => mounted ? setState(() {}) : () {};
 
-  Future initialize({bool auto_next = true}) async {
-    await controller?.dispose();
-    controller = null;
-    directLink = null;
-    progress = 0;
-    update();
-    directLink = await MerlMovieClient.request(
-      widget.embed,
-      onProgress: onRequestProgress,
-      onError: widget.plugins.isEmpty || !auto_next ? onRequestError : null,
-    );
-    if (auto_next) {
-      if (directLink == null) {
-        for (int i = 0; i < widget.plugins.length; i++) {
-          if (mounted) {
-            bool isLast = i + 1 >= widget.plugins.length;
-            widget.embed.plugin = widget.plugins[i];
-            update();
-            if (!widget.embed.plugin.useWebView) {
-              directLink = await MerlMovieClient.request(
-                widget.embed,
-                onProgress: onRequestProgress,
-                onError: isLast ? onRequestError : null,
-              );
-              if (directLink != null) {
-                update();
-                bool isLoaded = await tryLoad(isLast);
-                if (!isLoaded) {
-                  directLink = null;
-                  update();
-                } else {
-                  break;
-                }
-              }
-            } else {
-              restoreSystemChrome = false;
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (context) {
-                    return MerlMovieClientWebViewPlayer(
-                      embed: widget.embed,
-                      onDisposedDeviceOrientations:
-                          widget.onDisposedDeviceOrientations,
-                      adConfig: widget.adConfig,
-                    );
-                  },
-                ),
-              );
-              break;
-            }
-          }
-        }
-      } else {
-        await tryLoad();
+  Future initialize() async {
+    if (widget.plugins.isEmpty) {
+      await load_plugin(widget.embed.plugin);
+    } else {
+      int length = widget.plugins.length;
+      for (int i = 0; i < length; i++) {
+        bool isLast = i + 1 >= length;
+        bool isLoaded = await load_plugin(
+          widget.plugins[i],
+          showErrorOnRequest: isLast,
+          showErrorOnLoadLink: isLast,
+        );
+        if (isLoaded) break;
       }
     }
-    if (!auto_next) await tryLoad();
-    update();
   }
 
-  Future<bool> tryLoad([bool? showError]) async {
-    if (mounted && directLink != null) {
-      for (int i = 0; i < directLink!.qualities.length; i++) {
-        final qua = directLink!.qualities[i];
+  Future<bool> load_plugin(
+    PluginModel plugin, {
+    bool showErrorOnRequest = true,
+    bool? showErrorOnLoadLink,
+  }) async {
+    widget.embed.plugin = plugin;
+    if (plugin.useWebView) {
+      restoreSystemChrome = false;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) {
+            return MerlMovieClientWebViewPlayer(
+              embed: widget.embed,
+              onDisposedDeviceOrientations: widget.onDisposedDeviceOrientations,
+              adConfig: widget.adConfig,
+            );
+          },
+        ),
+      );
+      return true;
+    } else {
+      directLink = null;
+      await controller?.dispose();
+      controller = null;
+      directLink = null;
+      progress = 0;
+      update();
+      directLink = await MerlMovieClient.request(
+        widget.embed,
+        onProgress: onRequestProgress,
+        onError: showErrorOnRequest ? onRequestError : null,
+      );
+      update();
+      if (directLink != null) {
+        return await try_load_quality(
+          directLink!.qualities,
+          showErrorOnLoadLink,
+        );
+      } else {
+        return false;
+      }
+    }
+  }
+
+  Future<bool> try_load_quality(
+    List<QualityItem> qualities, [
+    bool? showError,
+  ]) async {
+    if (mounted) {
+      for (int i = 0; i < qualities.length; i++) {
+        final qua = qualities[i];
+        bool isLast = (i + 1) >= qualities.length;
         bool isLoaded = await changeQuality(
           qua,
-          showError ?? (i + 1) >= directLink!.qualities.length,
+          showError == true ? isLast : false,
         );
         if (isLoaded) {
           return true;
@@ -207,6 +216,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
   ]) async {
     if (currentQuality?.link != quality.link) {
       try {
+        isInitializing.value = true;
         await controller?.dispose();
         controller = null;
         currentQuality = quality;
@@ -218,6 +228,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
         await controller?.seekTo(position);
         controller?.play().then((value) {
           hideControls.value = true;
+          isInitializing.value = false;
           createAutoAd();
         });
         update();
@@ -248,7 +259,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
           break;
         }
       }
-      log("\n[${runtimeType.toString()}] Create VideoPlayerController with proxy.\n");
+      log(
+        "\n[${runtimeType.toString()}] Create VideoPlayerController with proxy.\n",
+      );
       return VideoPlayerController.networkUrl(
         Uri.parse(
           MerlMovieHttpProxyService.create_proxy_url(
@@ -366,7 +379,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
         );
       }
     } else {
-      initialize(auto_next: false);
+      load_plugin(plugin, showErrorOnRequest: true, showErrorOnLoadLink: true);
     }
   }
 
@@ -474,6 +487,10 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     super.initState();
     _isActive = true;
     position = widget.initialPosition;
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
     hideControls.addListener(hideControlsListener);
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
     WakelockPlus.enable();
@@ -493,6 +510,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
     MerlMovieClient.closeWSSConnection();
     autoAdmob?.destroy();
     autoAdmob = null;
+    _animationController?.dispose();
     hideControls.removeListener(hideControlsListener);
     if (controller != null) {
       if (controller!.value.position.inMinutes >=
@@ -593,6 +611,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer> {
                                       padding: const EdgeInsets.only(top: 24),
                                       child: PlayerMiddleControls(
                                         controller: controller,
+                                        isInitializing: isInitializing,
+                                        animationController:
+                                            _animationController,
                                         preventHideControls:
                                             preventHideControls,
                                       ),

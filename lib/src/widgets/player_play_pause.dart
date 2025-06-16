@@ -7,31 +7,32 @@ class PlayerPlayPause extends StatefulWidget {
   final VideoPlayerController? controller;
   final double size;
   final void Function()? preventHideControls;
+  final ValueNotifier<bool> isInitializing;
+  final AnimationController? animationController;
   const PlayerPlayPause({
     super.key,
     this.controller,
     this.size = 72,
     this.preventHideControls,
+    required this.isInitializing,
+    this.animationController,
   });
 
   @override
   State<PlayerPlayPause> createState() => _PlayerPlayPauseState();
 }
 
-class _PlayerPlayPauseState extends State<PlayerPlayPause>
-    with SingleTickerProviderStateMixin {
-  AnimationController? _animationController;
-
+class _PlayerPlayPauseState extends State<PlayerPlayPause> {
   void playPause() {
     if (widget.controller != null) {
       if (widget.controller!.value.isPlaying) {
         widget.controller?.pause();
         _isPaused = true;
-        _animationController?.animateTo(0.0);
+        widget.animationController?.animateTo(0.0);
       } else {
         widget.controller?.play();
         _isPaused = false;
-        _animationController?.animateTo(1.0);
+        widget.animationController?.animateTo(1.0);
       }
     }
     widget.preventHideControls?.call();
@@ -40,20 +41,20 @@ class _PlayerPlayPauseState extends State<PlayerPlayPause>
   void listener() {
     if (mounted) {
       if (widget.controller?.value.isPlaying == true) {
-        _animationController?.animateTo(1.0);
+        widget.animationController?.animateTo(1.0);
       } else {
-        _animationController?.animateTo(0.0);
+        widget.animationController?.animateTo(0.0);
       }
     }
   }
 
   @override
   void initState() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      vsync: this,
-      value: widget.controller?.value.isPlaying == true ? 1.0 : 0.0,
-    );
+    if (widget.controller?.value.isPlaying == true) {
+      widget.animationController?.animateTo(1.0);
+    } else {
+      widget.animationController?.animateTo(0.0);
+    }
     if (widget.controller != null) {
       if (widget.controller!.value.isCompleted) {
         _isPaused = widget.controller!.value.isCompleted;
@@ -66,7 +67,6 @@ class _PlayerPlayPauseState extends State<PlayerPlayPause>
 
   @override
   void dispose() {
-    _animationController?.dispose();
     widget.controller?.removeListener(listener);
     super.dispose();
   }
@@ -101,26 +101,33 @@ class _PlayerPlayPauseState extends State<PlayerPlayPause>
                 bool isLoading =
                     (value.isBuffering || (!value.isInitialized && !_isPaused));
 
-                return AnimatedSwitcher(
-                  key: Key("__play_pause_switcher"),
-                  duration: const Duration(milliseconds: 300),
-                  child:
-                      isLoading || _animationController == null
-                          ? SizedBox(
-                            key: Key("__buffering"),
-                            width: widget.size * 1.4,
-                            height: widget.size * 1.4,
-                            child: const CircularProgressIndicator(
-                              color: Colors.white,
-                            ),
-                          )
-                          : AnimatedIcon(
-                            key: Key("__play_pause"),
-                            icon: AnimatedIcons.play_pause,
-                            progress: _animationController!,
-                            size: widget.size * 1.4,
-                            color: Colors.white,
-                          ),
+                return ValueListenableBuilder(
+                  valueListenable: widget.isInitializing,
+                  builder: (context, isInitial, _) {
+                    return AnimatedSwitcher(
+                      key: Key("__play_pause_switcher"),
+                      duration: const Duration(milliseconds: 300),
+                      child:
+                          isLoading ||
+                                  widget.animationController == null ||
+                                  isInitial
+                              ? SizedBox(
+                                key: Key("__buffering"),
+                                width: widget.size * 1.4,
+                                height: widget.size * 1.4,
+                                child: const CircularProgressIndicator(
+                                  color: Colors.white,
+                                ),
+                              )
+                              : AnimatedIcon(
+                                key: Key("__play_pause"),
+                                icon: AnimatedIcons.play_pause,
+                                progress: widget.animationController!,
+                                size: widget.size * 1.4,
+                                color: Colors.white,
+                              ),
+                    );
+                  },
                 );
               }
             },
