@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 import 'dart:developer';
 
@@ -7,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_auto_admob/flutter_auto_admob.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
+import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/helpers/proxy.dart';
 import 'package:merlmovie_client/src/helpers/subtitle.dart';
 import 'package:merlmovie_client/src/helpers/themoviedb.dart';
@@ -14,12 +17,13 @@ import 'package:merlmovie_client/src/merlmovie_client.dart';
 import 'package:merlmovie_client/src/models/direct_link.dart';
 import 'package:merlmovie_client/src/models/embed.dart';
 import 'package:merlmovie_client/src/models/movie.dart';
-import 'package:merlmovie_client/src/models/player_callback.dart';
+import 'package:merlmovie_client/src/models/callback.dart';
 import 'package:merlmovie_client/src/models/plugin.dart';
 import 'package:merlmovie_client/src/widgets/player_bottom_controls.dart';
 import 'package:merlmovie_client/src/widgets/player_display_caption.dart';
 import 'package:merlmovie_client/src/widgets/player_loading.dart';
 import 'package:merlmovie_client/src/widgets/player_middle_controls.dart';
+import 'package:merlmovie_client/src/widgets/player_select_episode.dart';
 import 'package:merlmovie_client/src/widgets/player_top_controls.dart';
 import 'package:merlmovie_client/src/widgets/player_video_builder.dart';
 import 'package:merlmovie_client/src/widgets/prompt_dialog.dart';
@@ -42,7 +46,9 @@ class MerlMovieClientPlayer extends StatefulWidget {
   final String? selectPluginSheetLabel;
   final AutoAdmobConfig? adConfig;
   final Future<DetailModel> Function(MovieModel movie)? onRequestDetail;
-  MerlMovieClientPlayer({
+  final Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
+  onDirectLinkRequested;
+  const MerlMovieClientPlayer({
     super.key,
     required this.embed,
     this.callback,
@@ -54,12 +60,8 @@ class MerlMovieClientPlayer extends StatefulWidget {
     this.initialPosition = Duration.zero,
     this.adConfig,
     this.onRequestDetail,
-  }) {
-    assert(
-      similar.isEmpty && onRequestDetail == null,
-      "You must be provide both similar & onRequestDetail properties.",
-    );
-  }
+    this.onDirectLinkRequested,
+  });
 
   static bool get isActive => _isActive;
 
@@ -108,6 +110,10 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     with TickerProviderStateMixin {
   AutoAdmob? autoAdmob;
 
+  late EmbedModel embed;
+  List<Season> seasons_arr = [];
+  List<MovieModel> similar_arr = [];
+
   Duration position = Duration.zero;
 
   bool restoreSystemChrome = true;
@@ -136,11 +142,13 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
 
   AnimationController? _animationController;
 
+  MovieModel? currentSimilar;
+
   void update() => mounted ? setState(() {}) : () {};
 
   Future initialize() async {
     if (widget.plugins.isEmpty) {
-      await load_plugin(widget.embed.plugin);
+      await load_plugin(embed.plugin);
     } else {
       int length = widget.plugins.length;
       for (int i = 0; i < length; i++) {
@@ -160,14 +168,14 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     bool showErrorOnRequest = true,
     bool? showErrorOnLoadLink,
   }) async {
-    widget.embed.plugin = plugin;
+    embed.plugin = plugin;
     if (plugin.useWebView) {
       restoreSystemChrome = false;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) {
             return MerlMovieClientWebViewPlayer(
-              embed: widget.embed,
+              embed: embed,
               onDisposedDeviceOrientations: widget.onDisposedDeviceOrientations,
               adConfig: widget.adConfig,
             );
@@ -184,12 +192,16 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       progress = 0;
       update();
       directLink = await MerlMovieClient.request(
-        widget.embed,
+        embed,
         onProgress: onRequestProgress,
         onError: showErrorOnRequest ? onRequestError : null,
       );
       update();
       if (directLink != null) {
+        if (widget.onDirectLinkRequested != null) {
+          directLink = await widget.onDirectLinkRequested!(directLink!, embed);
+          update();
+        }
         return await try_load_quality(
           directLink!.qualities,
           showErrorOnLoadLink,
@@ -259,16 +271,20 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
   }
 
+  Future force_start_proxy() async {
+    while (true) {
+      if (!await MerlMovieHttpProxyService.isServing) {
+        await MerlMovieHttpProxyService.background_serve();
+        await Future.delayed(const Duration(seconds: 1));
+      } else {
+        break;
+      }
+    }
+  }
+
   Future create_video_controller(QualityItem quality) async {
     if (quality.use_proxy) {
-      while (true) {
-        if (!await MerlMovieHttpProxyService.isServing) {
-          await MerlMovieHttpProxyService.background_serve();
-          await Future.delayed(const Duration(seconds: 1));
-        } else {
-          break;
-        }
-      }
+      await force_start_proxy();
       log(
         "\n[${runtimeType.toString()}] Create VideoPlayerController with proxy.\n",
       );
@@ -307,6 +323,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   void playerListener() {
     if (controller != null) {
       widget.callback?.onPositionChanged?.call(
+        embed,
         controller!.value.position,
         controller!.value.duration,
       );
@@ -335,7 +352,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         PluginModel? plugin = await MerlMovieClientPlayer.selectPlugin(
           context,
           widget.plugins,
-          widget.embed,
+          embed,
           label: widget.selectPluginSheetLabel,
         );
         if (plugin != null) {
@@ -358,7 +375,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         PluginModel? plugin = await MerlMovieClientPlayer.selectPlugin(
           context,
           widget.plugins,
-          widget.embed,
+          embed,
           label: widget.selectPluginSheetLabel,
         );
         if (plugin != null) {
@@ -369,9 +386,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   void onPluginChanged(PluginModel plugin) async {
-    widget.embed.plugin = plugin;
+    embed.plugin = plugin;
     update();
-    if (widget.embed.plugin.useWebView) {
+    if (embed.plugin.useWebView) {
       restoreSystemChrome = false;
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) {
@@ -379,7 +396,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
           MaterialPageRoute(
             builder: (context) {
               return MerlMovieClientWebViewPlayer(
-                embed: widget.embed,
+                embed: embed,
                 onDisposedDeviceOrientations:
                     widget.onDisposedDeviceOrientations,
                 adConfig: widget.adConfig,
@@ -411,7 +428,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     PluginModel? plugin = await MerlMovieClientPlayer.selectPlugin(
       context,
       widget.plugins,
-      widget.embed,
+      embed,
       label: widget.selectPluginSheetLabel,
     );
     if (plugin != null) {
@@ -420,11 +437,11 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   Future onEpisodeChanged(Episode episode) async {
-    if (episode.seasonNumber != int.parse(widget.embed.season!) ||
-        episode.episodeNumber != int.parse(widget.embed.episode!)) {
-      widget.embed.season = episode.seasonNumber.toString();
-      widget.embed.episode = episode.episodeNumber.toString();
-      widget.embed.thumbnail = TheMovieDbApi.getImage(
+    if (episode.seasonNumber != int.parse(embed.season) ||
+        episode.episodeNumber != int.parse(embed.episode)) {
+      embed.season = episode.seasonNumber.toString();
+      embed.episode = episode.episodeNumber.toString();
+      embed.thumbnail = TheMovieDbApi.getImage(
         episode.stillPath,
         TMDBImageSize.original,
       );
@@ -457,6 +474,80 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       }, subtitle);
       subtitles.value = arr;
     }
+  }
+
+  Future onSimilarChanged(MovieModel movie) async {
+    if (TheMovieDbApi.api_keys.isEmpty) return;
+    if (widget.onRequestDetail != null) {
+      directLink = null;
+      progress = 0;
+      currentSimilar = movie;
+      isInitializing.value = true;
+      subtitles.value = [];
+      subtitle = null;
+      currentQuality = null;
+      embed.thumbnail = TheMovieDbApi.getImage(
+        movie.backdropPath,
+        TMDBImageSize.original,
+      );
+      embed.title_logo = TheMovieDbApi.getTitleLogo(
+        movie.type,
+        movie.id.toString(),
+      );
+      update();
+      await force_start_proxy();
+      await MerlMovieClient.closeWSSConnection();
+      await controller?.dispose();
+      controller = null;
+      position = Duration.zero;
+      update();
+      bool isLastSimilar = similar_arr.last.unique == movie.unique;
+      final detail = await widget.onRequestDetail!(movie);
+      embed.detail = detail;
+      embed.type = detail.type;
+      embed.tmdbId = movie.id.toString();
+      embed.title = movie.real_title;
+      embed.imdbId = detail.externalIds.imdbId;
+      seasons_arr = detail.seasons;
+      if (isLastSimilar) {
+        similar_arr = [
+          ...detail.recommendations.results,
+          ...detail.similar.results,
+        ];
+      }
+      update();
+      if (detail.type == "tv" && detail.seasons.isNotEmpty) {
+        Episode? episode = await showModalBottomSheet(
+          context: navigatorKey.currentContext!,
+          isScrollControlled: true,
+          builder: (context) {
+            return PlayerSelectEpisodeSheet(
+              seasons: detail.seasons,
+              currentEpisode: null,
+            );
+          },
+        );
+        if (episode != null) {
+          embed.season = episode.seasonNumber.toString();
+          embed.episode = episode.episodeNumber.toString();
+          embed.thumbnail = TheMovieDbApi.getImage(
+            episode.stillPath,
+            TMDBImageSize.original,
+          );
+        } else {
+          embed.season =
+              detail.seasons.first.episodes.first.seasonNumber.toString();
+          embed.episode =
+              detail.seasons.first.episodes.first.episodeNumber.toString();
+          embed.thumbnail = TheMovieDbApi.getImage(
+            detail.seasons.first.episodes.first.stillPath,
+            TMDBImageSize.original,
+          );
+        }
+      }
+    }
+    update();
+    initialize();
   }
 
   void showHideControls() {
@@ -501,6 +592,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       duration: const Duration(milliseconds: 250),
       vsync: this,
     );
+    embed = EmbedModel.fromMap(widget.embed.toMap());
+    seasons_arr = [...widget.seasons];
+    similar_arr = [...widget.similar];
     hideControls.addListener(hideControlsListener);
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
     WakelockPlus.enable();
@@ -525,10 +619,11 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     if (controller != null) {
       if (controller!.value.position.inMinutes >=
           (controller!.value.duration.inMinutes - 10)) {
-        widget.callback?.onDecideAsWatched?.call();
+        widget.callback?.onDecideAsWatched?.call(embed);
       }
     }
     controller?.dispose();
+    controller = null;
   }
 
   @override
@@ -602,7 +697,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     PlayerTopControls(
-                                      embed: widget.embed,
+                                      embed: embed,
                                       controller: controller,
                                       onTrailingClicked:
                                           widget.plugins.isNotEmpty
@@ -632,19 +727,22 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                                       currentViewType: videoViewType,
                                       currentPlaybackSpeed: playbackSpeed,
                                       currentQuality: currentQuality,
-                                      currentEpisode: widget.seasons
-                                          .findCurrentEpisode(widget.embed),
+                                      currentEpisode: seasons_arr
+                                          .findCurrentEpisode(embed),
                                       qualities: directLink?.qualities ?? [],
-                                      seasons: widget.seasons,
+                                      seasons: seasons_arr,
+                                      similar: similar_arr,
                                       currentSubtitle: subtitle,
+                                      currentSimilar: currentSimilar,
                                       subtitles: directLink?.subtitles ?? [],
-                                      onPlaybackSpeedChanged:
-                                          onPlaybackSpeedChanged,
                                       onViewTypeChanged: onViewTypeChanged,
                                       onQualityChanged: onQualityChanged,
                                       onEpisodeChanged: onEpisodeChanged,
                                       onSubtitleChanged: onSubtitleChanged,
                                       preventHideControls: preventHideControls,
+                                      onSimilarChanged: onSimilarChanged,
+                                      onPlaybackSpeedChanged:
+                                          onPlaybackSpeedChanged,
                                     ),
                                   ],
                                 ),
@@ -660,11 +758,17 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                   right: 0,
                   bottom: 0,
                   child: PlayerLoading(
-                    embed: widget.embed,
+                    embed: embed,
                     progress: progress,
                     plugins: widget.plugins,
+                    currentSimilar: currentSimilar,
+                    seasons: seasons_arr,
+                    similar: similar_arr,
+                    currentEpisode: seasons_arr.findCurrentEpisode(embed),
                     sheetLabel: widget.selectPluginSheetLabel,
                     onPluginChanged: onPluginChanged,
+                    onSimilarChanged: onSimilarChanged,
+                    onEpisodeChanged: onEpisodeChanged,
                   ),
                 ),
             ],

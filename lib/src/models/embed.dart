@@ -3,24 +3,55 @@ import 'package:merlmovie_client/src/models/plugin.dart';
 
 class EmbedModel {
   String type = "movie";
-  String tmdbId = "";
-  String imdbId = "";
-  String? season, episode, title, thumbnail, title_logo, other_id;
-  DetailModel? detail;
-  PluginModel plugin = PluginModel.fromMap({});
+  String tmdbId = "",
+      imdbId = "",
+      season = "",
+      episode = "",
+      title = "",
+      thumbnail = "",
+      title_logo = "",
+      other_id = "";
+  DetailModel detail;
+  PluginModel plugin;
 
   EmbedModel({
     this.type = "movie",
     this.tmdbId = "",
     this.imdbId = "",
-    this.title,
-    this.thumbnail,
-    this.season,
-    this.episode,
-    this.title_logo,
-    this.detail,
+    this.title = "",
+    this.thumbnail = "",
+    this.season = "",
+    this.episode = "",
+    this.title_logo = "",
+    required this.detail,
     required this.plugin,
   });
+
+  factory EmbedModel.fromMap(Map<String, dynamic> map) => EmbedModel(
+    title: map["title"] ?? "",
+    title_logo: map["title_logo"] ?? "",
+    thumbnail: map["thumbnail"] ?? "",
+    tmdbId: map["tmdb_id"] ?? "",
+    imdbId: map["imdb_id"] ?? "",
+    type: map["type"] ?? "",
+    season: map["season"] ?? "",
+    episode: map["episode"] ?? "",
+    detail: DetailModel.fromMap(map["detail"] ?? {}),
+    plugin: PluginModel.fromMap(map["plugin"] ?? {}),
+  );
+
+  Map<String, dynamic> toMap() => {
+    "title": title,
+    "title_logo": title_logo,
+    "thumbnail": thumbnail,
+    "tmdb_id": tmdbId,
+    "imdb_id": imdbId,
+    "type": type,
+    "season": season,
+    "episode": episode,
+    "detail": detail.toJson(),
+    "plugin": plugin.toMap(),
+  };
 
   String get key => "$type-$tmdbId";
 

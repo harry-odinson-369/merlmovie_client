@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
+import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/helpers/duration.dart';
 import 'package:merlmovie_client/src/models/direct_link.dart';
 import 'package:merlmovie_client/src/models/movie.dart';
@@ -10,6 +11,7 @@ import 'package:merlmovie_client/src/widgets/player_bottom_controls_button.dart'
 import 'package:merlmovie_client/src/widgets/player_playback_speed.dart';
 import 'package:merlmovie_client/src/widgets/player_select_episode.dart';
 import 'package:merlmovie_client/src/widgets/player_select_quality.dart';
+import 'package:merlmovie_client/src/widgets/player_select_similar_sheet.dart';
 import 'package:merlmovie_client/src/widgets/player_select_subtitle.dart';
 import 'package:merlmovie_client/src/widgets/player_video_builder.dart';
 import 'package:video_player/video_player.dart';
@@ -21,14 +23,17 @@ class PlayerBottomControls extends StatelessWidget {
   final QualityItem? currentQuality;
   final Episode? currentEpisode;
   final SubtitleItem? currentSubtitle;
+  final MovieModel? currentSimilar;
   final List<QualityItem> qualities;
   final List<Season> seasons;
   final List<SubtitleItem> subtitles;
+  final List<MovieModel> similar;
   final void Function(VideoViewBuilderType view)? onViewTypeChanged;
   final void Function(double speed)? onPlaybackSpeedChanged;
   final void Function(QualityItem quality)? onQualityChanged;
   final void Function(Episode episode)? onEpisodeChanged;
   final void Function(SubtitleItem? subtitle)? onSubtitleChanged;
+  final void Function(MovieModel movie)? onSimilarChanged;
   final void Function()? preventHideControls;
   const PlayerBottomControls({
     super.key,
@@ -37,15 +42,18 @@ class PlayerBottomControls extends StatelessWidget {
     this.currentEpisode,
     this.currentSubtitle,
     this.currentViewType,
+    this.currentSimilar,
     this.currentPlaybackSpeed = 1.0,
     this.qualities = const [],
     this.seasons = const [],
     this.subtitles = const [],
+    this.similar = const [],
     this.onQualityChanged,
     this.onViewTypeChanged,
     this.onPlaybackSpeedChanged,
     this.onEpisodeChanged,
     this.onSubtitleChanged,
+    this.onSimilarChanged,
     this.preventHideControls,
   });
 
@@ -134,9 +142,46 @@ class PlayerBottomControls extends StatelessWidget {
     onSubtitleChanged?.call(subtitle);
   }
 
+  Future changeSimilar(
+    BuildContext context,
+    List<MovieModel> similar,
+    MovieModel? current, [
+    List<Season> seasons = const [],
+    Episode? currentEpisode,
+  ]) async {
+    MovieModel? selected = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return PlayerSelectSimilarSheet(similar: similar, current: current);
+      },
+    );
+    if (selected != null) {
+      if (selected.unique != current?.unique) {
+        onSimilarChanged?.call(selected);
+      } else {
+        changeEpisode(navigatorKey.currentContext!, seasons, currentEpisode);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final defaultButtons = [
+      if (similar.isNotEmpty)
+        PlayerBottomControlsButton(
+          onTap:
+              () => changeSimilar(
+                context,
+                similar,
+                currentSimilar,
+                seasons,
+                currentEpisode,
+              ),
+          icon: CupertinoIcons.list_bullet_below_rectangle,
+          iconSize: 22,
+          label: "Similar",
+        ),
       if (seasons.isNotEmpty)
         PlayerBottomControlsButton(
           onTap: () {
@@ -241,9 +286,15 @@ class PlayerBottomControls extends StatelessWidget {
                 },
               ),
             SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(children: defaultButtons),
+            NotificationListener(
+              onNotification: (notification) {
+                preventHideControls?.call();
+                return true;
+              },
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: defaultButtons),
+              ),
             ),
           ],
         ),

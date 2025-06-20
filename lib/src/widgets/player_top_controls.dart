@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/merlmovie_client.dart';
@@ -53,7 +55,7 @@ class PlayerTopControls extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                embed.title ?? "Playing Video",
+                embed.title.isEmpty ? "Playing Video" : embed.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.theme.textTheme.titleMedium?.copyWith(

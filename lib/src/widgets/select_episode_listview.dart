@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:merlmovie_client/merlmovie_client.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';

@@ -18,7 +18,7 @@ import 'package:merlmovie_client/src/helpers/themoviedb.dart';
 import 'package:merlmovie_client/src/models/direct_link.dart';
 import 'package:merlmovie_client/src/models/embed.dart';
 import 'package:merlmovie_client/src/models/movie.dart';
-import 'package:merlmovie_client/src/models/player_callback.dart';
+import 'package:merlmovie_client/src/models/callback.dart';
 import 'package:merlmovie_client/src/models/plugin.dart';
 import 'package:merlmovie_client/src/models/wss.dart';
 import 'package:merlmovie_client/src/providers/browser.dart';
@@ -182,7 +182,7 @@ class MerlMovieClient {
         "media_id": embed.plugin.useIMDb ? embed.imdbId : embed.tmdbId,
         "season_id": embed.season,
         "episode_id": embed.episode,
-        "data": embed.detail?.toJson(),
+        "data": embed.detail.toJson(),
       };
       final streamData = WSSDataModel(
         action: WSSAction.stream,
@@ -294,6 +294,9 @@ class MerlMovieClient {
     return responseInfo;
   }
 
+  static void setTheMovieDbApiKeys(List<String> keys) =>
+      TheMovieDbApi.setApiKeys(keys);
+
   static EmbedModel create_embed(
     PluginModel selected,
     DetailModel detail, [
@@ -305,11 +308,11 @@ class MerlMovieClient {
       tmdbId: detail.id.toString(),
       type: detail.type,
       imdbId: detail.externalIds.imdbId,
-      season: episode?.seasonNumber.toString(),
-      episode: episode?.episodeNumber.toString(),
+      season: episode?.seasonNumber.toString() ?? "",
+      episode: episode?.episodeNumber.toString() ?? "",
       title: detail.real_title,
       thumbnail: TheMovieDbApi.getImage(
-        detail.backdropPath,
+        episode != null ? episode.stillPath : detail.backdropPath,
         TMDBImageSize.original,
       ),
       title_logo: TheMovieDbApi.getImage(
@@ -331,6 +334,7 @@ class MerlMovieClient {
     List<DeviceOrientation>? onDisposedDeviceOrientations,
     AutoAdmobConfig? adConfig,
     Future<DetailModel> Function(MovieModel movie)? onRequestDetail,
+    Future<DirectLink> Function(DirectLink link, EmbedModel embed)? onDirectLinkRequested,
   }) async {
     EmbedModel embed = create_embed(selected, detail, episode);
     List<PluginModel> playerPlugins =
@@ -367,9 +371,16 @@ class MerlMovieClient {
                 plugins: filtered_plugins,
                 initialPosition: initialPosition,
                 onRequestDetail: onRequestDetail,
+                onDirectLinkRequested: onDirectLinkRequested,
                 selectPluginSheetLabel: selectPluginSheetLabel,
                 onDisposedDeviceOrientations: onDisposedDeviceOrientations,
-                similar: onRequestDetail != null ? detail.similar.results : [],
+                similar:
+                    onRequestDetail != null
+                        ? [
+                          ...detail.recommendations.results,
+                          ...detail.similar.results,
+                        ]
+                        : [],
               );
             },
           ),

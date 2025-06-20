@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 import 'dart:io';
 
@@ -40,6 +42,8 @@ class _MerlMovieClientWebViewPlayerState
   bool isLoading = true;
 
   GlobalKey? webViewKey;
+
+  List<MerlMovieClientWebViewWidget> popup_links = [];
 
   InAppWebViewSettings get settings => InAppWebViewSettings(
     allowsInlineMediaPlayback: true,
@@ -92,6 +96,11 @@ class _MerlMovieClientWebViewPlayerState
             (e) => e == uri.domainNameOnly,
           );
           if (request.isMainFrame && !isMatched) {
+            if (popup_links.length >= 3) {
+              popup_links.clear();
+            }
+            popup_links.add(MerlMovieClientWebViewWidget(link: request.url));
+            update();
             return NavigationDecision.prevent;
           }
           return NavigationDecision.navigate;
@@ -173,6 +182,23 @@ class _MerlMovieClientWebViewPlayerState
     return NavigationActionPolicy.ALLOW;
   }
 
+  Future<bool> onCreateWindow(
+    InAppWebViewController controller,
+    CreateWindowAction action,
+  ) async {
+    if (popup_links.length >= 3) {
+      popup_links.clear();
+    }
+    if (action.request.url != null) {
+      popup_links.add(
+        MerlMovieClientWebViewWidget(link: action.request.url.toString()),
+      );
+      update();
+    }
+
+    return true;
+  }
+
   @override
   void initState() {
     _isActive = true;
@@ -200,6 +226,7 @@ class _MerlMovieClientWebViewPlayerState
     webViewKey = null;
     autoAdmob?.destroy();
     autoAdmob = null;
+    popup_links.clear();
     super.dispose();
   }
 
@@ -214,39 +241,46 @@ class _MerlMovieClientWebViewPlayerState
         extendBody: true,
         body: Stack(
           children: [
-            if (widget.embed.plugin.webView ==
-                    WebViewProviderType.webview_flutter &&
-                webViewFlutterController != null)
-              WebViewWidget(
-                key: webViewKey,
-                controller: webViewFlutterController!,
-              ),
-            if (widget.embed.plugin.webView ==
-                WebViewProviderType.flutter_inappwebview)
-              InAppWebView(
-                key: webViewKey,
-                initialUrlRequest:
-                    widget.embed.plugin.useIframe
-                        ? null
-                        : URLRequest(
-                          url: WebUri(widget.embed.requestUrl),
-                          headers: widget.embed.plugin.headers,
-                        ),
-                initialData:
-                    widget.embed.plugin.useIframe
-                        ? InAppWebViewInitialData(
-                          data: widget.embed.playableIframe,
-                          baseUrl: WebUri(widget.embed.requestUrl),
-                        )
-                        : null,
-                initialSettings: settings,
-                onProgressChanged:
-                    (controller, progress) =>
-                        onWebRequestProgress(progress.toDouble()),
-                onLoadStop: onFlutterInAppWebViewLoadStop,
-                shouldOverrideUrlLoading:
-                    onFlutterInAppWebViewShouldOverrideUrlLoading,
-              ),
+            IndexedStack(
+              index: 0,
+              children: [
+                if (widget.embed.plugin.webView ==
+                        WebViewProviderType.webview_flutter &&
+                    webViewFlutterController != null)
+                  WebViewWidget(
+                    key: webViewKey,
+                    controller: webViewFlutterController!,
+                  ),
+                if (widget.embed.plugin.webView ==
+                    WebViewProviderType.flutter_inappwebview)
+                  InAppWebView(
+                    key: webViewKey,
+                    initialUrlRequest:
+                        widget.embed.plugin.useIframe
+                            ? null
+                            : URLRequest(
+                              url: WebUri(widget.embed.requestUrl),
+                              headers: widget.embed.plugin.headers,
+                            ),
+                    initialData:
+                        widget.embed.plugin.useIframe
+                            ? InAppWebViewInitialData(
+                              data: widget.embed.playableIframe,
+                              baseUrl: WebUri(widget.embed.requestUrl),
+                            )
+                            : null,
+                    initialSettings: settings,
+                    onProgressChanged:
+                        (controller, progress) =>
+                            onWebRequestProgress(progress.toDouble()),
+                    onCreateWindow: onCreateWindow,
+                    onLoadStop: onFlutterInAppWebViewLoadStop,
+                    shouldOverrideUrlLoading:
+                        onFlutterInAppWebViewShouldOverrideUrlLoading,
+                  ),
+                ...popup_links.limit(3),
+              ],
+            ),
             if (isLoading)
               PlayerLoading(progress: webProgress, embed: widget.embed),
             if (!isLoading)

@@ -1,9 +1,9 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/cupertino.dart';
 import 'package:merlmovie_client/src/models/direct_link.dart';
 import 'package:subtitle/subtitle.dart';
 
@@ -31,7 +31,7 @@ class SubtitleHelper {
           return content;
         }
       } catch (err) {
-        debugPrint(err.toString());
+        log(err.toString());
       }
     }
     return "";
@@ -62,7 +62,7 @@ class SubtitleHelper {
             return [];
           }
         } catch (err) {
-          debugPrint(err.toString());
+          log(err.toString());
           return [];
         }
       } else if (extension == SubtitleFetchExtension.gz) {
@@ -91,7 +91,7 @@ class SubtitleHelper {
         return [];
       }
     } catch (error) {
-      debugPrint("Error while getting subtitle from network: $error");
+      log("Error while getting subtitle from network: $error");
       return [];
     }
   }
@@ -107,7 +107,7 @@ class SubtitleHelper {
       await controller.initial();
       return controller.subtitles;
     } catch (error) {
-      debugPrint("Error while getting subtitle from file: $error");
+      log("Error while getting subtitle from file: $error");
       return [];
     }
   }

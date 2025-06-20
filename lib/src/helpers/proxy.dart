@@ -7,7 +7,10 @@ import 'dart:isolate';
 import 'package:flutter_hls_parser/flutter_hls_parser.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/helpers/map.dart';
+import 'package:merlmovie_client/src/helpers/themoviedb.dart';
+import 'package:merlmovie_client/src/models/movie.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as io;
 
@@ -57,7 +60,8 @@ class MerlMovieHttpProxyService {
     );
   }
 
-  static Future<HttpServer> serve() => io.serve(_intercept_handler, hostname, port);
+  static Future<HttpServer> serve() =>
+      io.serve(_intercept_handler, hostname, port);
 
   static Future<Isolate> background_serve([int? PORT, String? HOSTNAME]) async {
     return Isolate.spawn<Map<String, dynamic>>(_background_serve, {
@@ -89,6 +93,11 @@ class MerlMovieHttpProxyService {
       return shelf.Response.ok("Serving...");
     }
 
+    if (request.url.pathSegments.isNotEmpty &&
+        request.url.pathSegments.first == "title-logo") {
+      return _handle_title_logo(request);
+    }
+
     String? destination = _restore_destination(
       request.url.queryParameters["d"],
     );
@@ -117,6 +126,58 @@ class MerlMovieHttpProxyService {
   ) {
     final range = headers[HttpHeaders.rangeHeader];
     return range != null ? {HttpHeaders.rangeHeader: range} : {};
+  }
+
+  static Future<shelf.Response> _handle_title_logo(
+    shelf.Request request,
+  ) async {
+    try {
+      final params = request.url.queryParameters;
+      String? media_id = params["media_id"];
+      String? media_type = params["media_type"];
+      TMDBImageSize? size = TMDBImageSize.values.firstWhereOrNull(
+        (e) => e.name == params["size"],
+      );
+      String? api_key = params["api_key"];
+
+      String request_url = TheMovieDbApi.v3(
+        "$media_type/$media_id?api_key=$api_key&append_to_response=images",
+      );
+
+      final resp = await http.get(Uri.parse(request_url));
+
+      if (resp.statusCode == HttpStatus.ok) {
+        final detail = DetailModel.fromMap(json.decode(resp.body));
+        if (detail.real_title_logo.isNotEmpty) {
+          final client = HttpClient();
+          client.badCertificateCallback =
+              (X509Certificate cert, String host, int port) => true;
+          final io_client = IOClient(client);
+          final request = http.Request(
+            "GET",
+            Uri.parse(
+              TheMovieDbApi.getImage(
+                detail.real_title_logo,
+                size ?? TMDBImageSize.w500,
+              ),
+            ),
+          )..followRedirects = false;
+          final streamed_response = await io_client.send(request);
+          final headers = Map<String, String>.from(streamed_response.headers);
+          return shelf.Response(
+            streamed_response.statusCode,
+            body: streamed_response.stream,
+            headers: headers,
+          );
+        }
+        return shelf.Response.notFound("");
+      }
+
+      return shelf.Response.notFound("");
+    } catch (err) {
+      log("[Http Proxy Service] Error title_logo: ${err.toString()}");
+      return shelf.Response.internalServerError();
+    }
   }
 
   static Future<shelf.Response> _handle_hls(

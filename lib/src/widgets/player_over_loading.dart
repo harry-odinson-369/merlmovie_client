@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +38,7 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (widget.progress == 0 && widget.embed.title == null)
+        if (widget.progress == 0 && widget.embed.title.isEmpty)
           CircularProgressIndicator(
             color: Colors.blue,
             backgroundColor: Colors.grey.shade800,
@@ -96,8 +98,9 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
         children: [
           SizedBox.expand(
             child: CachedNetworkImage(
-              imageUrl: widget.embed.thumbnail ?? "",
-              errorWidget: (context, url, error) => Container(color: Colors.black),
+              imageUrl: widget.embed.thumbnail,
+              errorWidget:
+                  (context, url, error) => Container(color: Colors.black),
               placeholder: (context, url) => Container(color: Colors.black),
               height: context.screen.height,
               width: context.screen.width,
@@ -111,7 +114,7 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
             color: Colors.black.withOpacity(.6),
           ),
 
-          if (widget.embed.title_logo != null)
+          if (widget.embed.title_logo.isNotEmpty)
             SizedBox(
               width: (context.screen.width / 2.5),
               child: Stack(
@@ -125,9 +128,10 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
                         BlendMode.srcATop,
                       ),
                       child: CachedNetworkImage(
-                        imageUrl: widget.embed.title_logo ?? "",
-                        placeholder: (context, url) => SizedBox(),
+                        imageUrl: widget.embed.title_logo,
                         fit: BoxFit.contain,
+                        placeholder: (context, url) => SizedBox(),
+                        errorWidget: (context, url, error) => SizedBox(),
                       ),
                     ),
                   ),
@@ -140,9 +144,10 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
                             show = !show;
                           }),
                       child: CachedNetworkImage(
-                        imageUrl: widget.embed.title_logo ?? "",
-                        placeholder: (context, url) => SizedBox(),
+                        imageUrl: widget.embed.title_logo,
                         fit: BoxFit.contain,
+                        placeholder: (context, url) => SizedBox(),
+                        errorWidget: (context, url, error) => SizedBox(),
                       ),
                     ),
                   if (prog > 0)
@@ -164,9 +169,10 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
                           },
                           blendMode: BlendMode.dstIn,
                           child: CachedNetworkImage(
-                            imageUrl: widget.embed.title_logo ?? "",
+                            imageUrl: widget.embed.title_logo,
                             fit: BoxFit.contain,
                             placeholder: (context, url) => SizedBox(),
+                            errorWidget: (context, url, error) => SizedBox(),
                           ),
                         );
                       },
@@ -175,7 +181,7 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
               ),
             ),
 
-          if (widget.embed.title_logo == null) loading,
+          if (widget.embed.title_logo.isEmpty) loading,
         ],
       ),
     );

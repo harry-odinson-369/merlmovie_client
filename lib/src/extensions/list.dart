@@ -15,6 +15,14 @@ extension ListExtension<T> on List<T> {
     return true;
   }
 
+  Iterable<T> limit(int max) sync* {
+    for (int i = 0; i < length; i++) {
+      if (i < max) {
+        yield this[i];
+      }
+    }
+  }
+
   bool exist(bool Function(T e) cb) {
     for (var i in this) {
       if (cb(i)) {
