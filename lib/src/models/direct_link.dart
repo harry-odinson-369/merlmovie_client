@@ -141,6 +141,7 @@ class SubtitleItemKey {
   String linkKey;
   String seasonKey;
   String episodeKey;
+  String formatKey;
   SubtitleFetchExtension extension = SubtitleFetchExtension.text;
 
   SubtitleItemKey({
@@ -148,6 +149,7 @@ class SubtitleItemKey {
     required this.linkKey,
     required this.seasonKey,
     required this.episodeKey,
+    required this.formatKey,
     this.extension = SubtitleFetchExtension.text,
   });
 
@@ -157,6 +159,7 @@ class SubtitleItemKey {
       linkKey: map["link"] ?? "SubDownloadLink",
       seasonKey: map["season"] ?? "SeriesSeason",
       episodeKey: map["episode"] ?? "SeriesEpisode",
+      formatKey: map["format"] ?? "SubFormat",
       extension:
           SubtitleFetchExtension.values.firstWhereOrNull(
             (e) => e.name.toLowerCase() == (map["extension"] ?? "text"),
@@ -171,6 +174,7 @@ class SubtitleItemKey {
     "season": seasonKey,
     "episode": episodeKey,
     "extension": extension.name,
+    "format": formatKey,
   };
 }
 

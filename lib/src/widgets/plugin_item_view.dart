@@ -81,7 +81,9 @@ class PluginItemView extends StatelessWidget {
                         : plugin.mediaType == MediaType.tv
                         ? "TV shows"
                         : "Movie",
-                    style: context.theme.textTheme.bodySmall,
+                    style: context.theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white54,
+                    ),
                   ),
                 ],
               ),

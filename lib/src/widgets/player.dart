@@ -19,21 +19,23 @@ import 'package:merlmovie_client/src/models/embed.dart';
 import 'package:merlmovie_client/src/models/movie.dart';
 import 'package:merlmovie_client/src/models/callback.dart';
 import 'package:merlmovie_client/src/models/plugin.dart';
+import 'package:merlmovie_client/src/models/subtitle.dart';
+import 'package:merlmovie_client/src/providers/player_state.dart';
 import 'package:merlmovie_client/src/widgets/player_bottom_controls.dart';
 import 'package:merlmovie_client/src/widgets/player_display_caption.dart';
 import 'package:merlmovie_client/src/widgets/player_loading.dart';
 import 'package:merlmovie_client/src/widgets/player_middle_controls.dart';
 import 'package:merlmovie_client/src/widgets/player_select_episode.dart';
+import 'package:merlmovie_client/src/widgets/player_subtitle_theme_editor.dart';
 import 'package:merlmovie_client/src/widgets/player_top_controls.dart';
 import 'package:merlmovie_client/src/widgets/player_video_builder.dart';
 import 'package:merlmovie_client/src/widgets/prompt_dialog.dart';
 import 'package:merlmovie_client/src/widgets/player_select_plugin.dart';
 import 'package:merlmovie_client/src/widgets/webview_player.dart';
+import 'package:provider/provider.dart';
 import 'package:subtitle/subtitle.dart';
 import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-
-bool _isActive = false;
 
 class MerlMovieClientPlayer extends StatefulWidget {
   final EmbedModel embed;
@@ -62,8 +64,6 @@ class MerlMovieClientPlayer extends StatefulWidget {
     this.onRequestDetail,
     this.onDirectLinkRequested,
   });
-
-  static bool get isActive => _isActive;
 
   static void setDeviceOrientationAndSystemUI() {
     SystemChrome.setPreferredOrientations([
@@ -120,6 +120,12 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
 
   double progress = 0;
 
+  bool isEditingSubtitleTheme = false;
+
+  ValueNotifier<SubtitleTheme> subtitleTheme = ValueNotifier(
+    SubtitleTheme.fromMap({}),
+  );
+
   ValueNotifier<bool> hideControls = ValueNotifier<bool>(false);
   ValueNotifier<bool> isInitializing = ValueNotifier<bool>(true);
 
@@ -174,10 +180,16 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) {
-            return MerlMovieClientWebViewPlayer(
-              embed: embed,
-              onDisposedDeviceOrientations: widget.onDisposedDeviceOrientations,
-              adConfig: widget.adConfig,
+            return Theme(
+              data: ThemeData.dark().copyWith(
+                colorScheme: ColorScheme.dark(primary: Colors.red),
+              ),
+              child: MerlMovieClientWebViewPlayer(
+                embed: embed,
+                onDisposedDeviceOrientations:
+                    widget.onDisposedDeviceOrientations,
+                adConfig: widget.adConfig,
+              ),
             );
           },
         ),
@@ -339,13 +351,25 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     update();
   }
 
+  TextStyle? get dialogButtonTextStyle =>
+      context.theme.textTheme.titleMedium?.copyWith(color: Colors.white);
+
   Future onRequestError(int status, String message) async {
     hideControls.value = false;
     bool? accepted = await showPromptDialog(
-      context,
       title: "Error code $status",
       subtitle:
           "$message${widget.plugins.isNotEmpty ? "\nWould you like to change the source?" : ""}",
+      titleStyle: context.theme.textTheme.titleLarge?.copyWith(
+        color: Colors.white,
+      ),
+      subtitleStyle: context.theme.textTheme.bodyMedium?.copyWith(
+        color: Colors.white70,
+      ),
+      negativeButtonTextStyle: dialogButtonTextStyle?.copyWith(
+        color: dialogButtonTextStyle?.color?.withOpacity(.8),
+      ),
+      positiveButtonTextStyle: dialogButtonTextStyle,
     );
     if (accepted) {
       if (mounted) {
@@ -356,7 +380,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
           label: widget.selectPluginSheetLabel,
         );
         if (plugin != null) {
-          onPluginChanged(plugin);
+          onLinkChanged(plugin);
         }
       }
     }
@@ -364,11 +388,20 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
 
   Future onLoadError(String title, String message) async {
     bool? accepted = await showPromptDialog(
-      context,
       title: title,
       subtitle:
           "$message${widget.plugins.isNotEmpty ? "\nWould you like to change the source?" : ""}",
       scrollableSubtitle: true,
+      titleStyle: context.theme.textTheme.titleLarge?.copyWith(
+        color: Colors.white,
+      ),
+      subtitleStyle: context.theme.textTheme.bodyMedium?.copyWith(
+        color: Colors.white70,
+      ),
+      negativeButtonTextStyle: dialogButtonTextStyle?.copyWith(
+        color: dialogButtonTextStyle?.color?.withOpacity(.8),
+      ),
+      positiveButtonTextStyle: dialogButtonTextStyle,
     );
     if (accepted) {
       if (mounted) {
@@ -379,13 +412,13 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
           label: widget.selectPluginSheetLabel,
         );
         if (plugin != null) {
-          onPluginChanged(plugin);
+          onLinkChanged(plugin);
         }
       }
     }
   }
 
-  void onPluginChanged(PluginModel plugin) async {
+  void onLinkChanged(PluginModel plugin) async {
     embed.plugin = plugin;
     update();
     if (embed.plugin.useWebView) {
@@ -395,11 +428,16 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) {
-              return MerlMovieClientWebViewPlayer(
-                embed: embed,
-                onDisposedDeviceOrientations:
-                    widget.onDisposedDeviceOrientations,
-                adConfig: widget.adConfig,
+              return Theme(
+                data: ThemeData.dark().copyWith(
+                  colorScheme: ColorScheme.dark(primary: Colors.red),
+                ),
+                child: MerlMovieClientWebViewPlayer(
+                  embed: embed,
+                  onDisposedDeviceOrientations:
+                      widget.onDisposedDeviceOrientations,
+                  adConfig: widget.adConfig,
+                ),
               );
             },
           ),
@@ -432,7 +470,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       label: widget.selectPluginSheetLabel,
     );
     if (plugin != null) {
-      onPluginChanged(plugin);
+      onLinkChanged(plugin);
     }
   }
 
@@ -452,6 +490,13 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       update();
       initialize();
     }
+  }
+
+  void onEditSubtitleThemeClicked() {
+    hideControls.value = true;
+    setState(() {
+      isEditingSubtitleTheme = true;
+    });
   }
 
   Future onSubtitleChanged(SubtitleItem? subtitle) async {
@@ -477,7 +522,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   Future onSimilarChanged(MovieModel movie) async {
-    if (TheMovieDbApi.api_keys.isEmpty) return;
+    assert(TheMovieDbApi.api_keys.isNotEmpty, "The TMDb Api keys must be set.");
     if (widget.onRequestDetail != null) {
       directLink = null;
       progress = 0;
@@ -493,6 +538,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       embed.title_logo = TheMovieDbApi.getTitleLogo(
         movie.type,
         movie.id.toString(),
+        TMDBImageSize.w300,
       );
       update();
       await force_start_proxy();
@@ -518,7 +564,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       update();
       if (detail.type == "tv" && detail.seasons.isNotEmpty) {
         Episode? episode = await showModalBottomSheet(
-          context: navigatorKey.currentContext!,
+          context: NavigatorKey.currentContext!,
           isScrollControlled: true,
           builder: (context) {
             return PlayerSelectEpisodeSheet(
@@ -551,7 +597,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   void showHideControls() {
-    if (controller?.value.isPlaying != true) return;
+    if (controller?.value.isPlaying != true || isEditingSubtitleTheme) return;
     hideControls.value = !hideControls.value;
     preventHideControls();
   }
@@ -566,8 +612,17 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
 
   Future<bool> askToExit() async {
     bool accepted = await showPromptDialog(
-      context,
       title: "Are you want to exit this page?",
+      titleStyle: context.theme.textTheme.titleLarge?.copyWith(
+        color: Colors.white,
+      ),
+      subtitleStyle: context.theme.textTheme.bodyMedium?.copyWith(
+        color: Colors.white70,
+      ),
+      negativeButtonTextStyle: dialogButtonTextStyle?.copyWith(
+        color: dialogButtonTextStyle?.color?.withOpacity(.8),
+      ),
+      positiveButtonTextStyle: dialogButtonTextStyle,
     );
     return accepted;
   }
@@ -585,8 +640,6 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
 
   @override
   void initState() {
-    super.initState();
-    _isActive = true;
     position = widget.initialPosition;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 250),
@@ -596,15 +649,18 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     seasons_arr = [...widget.seasons];
     similar_arr = [...widget.similar];
     hideControls.addListener(hideControlsListener);
+    SubtitleTheme.getTheme().then((value) => subtitleTheme.value = value);
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
     WakelockPlus.enable();
     initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PlayerStateProvider>(context, listen: false).setValue(true);
+    });
+    super.initState();
   }
 
   @override
   void dispose() {
-    super.dispose();
-    _isActive = false;
     if (restoreSystemChrome) {
       MerlMovieClientPlayer.restoreDeviceOrientationAndSystemUI(
         widget.onDisposedDeviceOrientations,
@@ -624,6 +680,15 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
     controller?.dispose();
     controller = null;
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (NavigatorKey.currentContext != null) {
+        Provider.of<PlayerStateProvider>(
+          NavigatorKey.currentContext!,
+          listen: false,
+        ).setValue(false);
+      }
+    });
+    super.dispose();
   }
 
   @override
@@ -658,99 +723,128 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                   controller: controller,
                   viewType: videoViewType,
                 ),
-              if (controller != null)
+              if (controller != null && !isEditingSubtitleTheme)
+                ValueListenableBuilder(
+                  valueListenable: subtitleTheme,
+                  builder: (context, currentSubtitleTheme, _) {
+                    return Positioned(
+                      left: 12,
+                      right: 12,
+                      bottom: currentSubtitleTheme.bottomPad,
+                      child: ValueListenableBuilder(
+                        valueListenable: subtitles,
+                        builder: (context, items, child) {
+                          if (items.isEmpty) {
+                            return SizedBox();
+                          }
+                          return PlayerDisplayCaption(
+                            subtitles: items,
+                            controller: controller,
+                            subtitleTheme: currentSubtitleTheme,
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              if (isEditingSubtitleTheme)
                 Positioned(
-                  left: 12,
-                  right: 12,
-                  bottom: context.screen.height * .1,
                   child: ValueListenableBuilder(
-                    valueListenable: subtitles,
-                    builder: (context, items, child) {
-                      if (items.isEmpty) {
-                        return SizedBox();
-                      }
-                      return PlayerDisplayCaption(
-                        subtitles: items,
-                        controller: controller,
+                    valueListenable: subtitleTheme,
+                    builder: (context, currentSubtitleTheme, _) {
+                      return PlayerSubtitleThemeEditor(
+                        current: currentSubtitleTheme,
+                        onClose:
+                            () =>
+                                setState(() => isEditingSubtitleTheme = false),
+                        onChanged: (theme) {
+                          subtitleTheme.value = theme;
+                          SubtitleTheme.setTheme(theme);
+                        },
                       );
                     },
                   ),
                 ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: ValueListenableBuilder(
-                  valueListenable: hideControls,
-                  builder: (context, isHiding, _) {
-                    return AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child:
-                          isHiding
-                              ? SizedBox(key: UniqueKey())
-                              : Container(
-                                key: UniqueKey(),
-                                color: Colors.black.withOpacity(.7),
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    PlayerTopControls(
-                                      embed: embed,
-                                      controller: controller,
-                                      onTrailingClicked:
-                                          widget.plugins.isNotEmpty
-                                              ? onTrailingClicked
-                                              : null,
-                                      trailing:
-                                          widget.plugins.isNotEmpty
-                                              ? Icon(
-                                                Icons.format_list_bulleted,
-                                                color: Colors.white,
-                                              )
-                                              : null,
-                                      preventHideControls: preventHideControls,
-                                    ),
-                                    Center(
-                                      child: PlayerMiddleControls(
+              if (!isEditingSubtitleTheme)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: ValueListenableBuilder(
+                    valueListenable: hideControls,
+                    builder: (context, isHiding, _) {
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child:
+                            isHiding
+                                ? SizedBox(key: UniqueKey())
+                                : Container(
+                                  key: UniqueKey(),
+                                  color: Colors.black.withOpacity(.7),
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      PlayerTopControls(
+                                        embed: embed,
                                         controller: controller,
-                                        isInitializing: isInitializing,
-                                        animationController:
-                                            _animationController,
+                                        onTrailingClicked:
+                                            widget.plugins.isNotEmpty
+                                                ? onTrailingClicked
+                                                : null,
+                                        trailing:
+                                            widget.plugins.isNotEmpty
+                                                ? Icon(
+                                                  Icons.format_list_bulleted,
+                                                  color: Colors.white,
+                                                )
+                                                : null,
                                         preventHideControls:
                                             preventHideControls,
                                       ),
-                                    ),
-                                    PlayerBottomControls(
-                                      controller: controller,
-                                      currentViewType: videoViewType,
-                                      currentPlaybackSpeed: playbackSpeed,
-                                      currentQuality: currentQuality,
-                                      currentEpisode: seasons_arr
-                                          .findCurrentEpisode(embed),
-                                      qualities: directLink?.qualities ?? [],
-                                      seasons: seasons_arr,
-                                      similar: similar_arr,
-                                      currentSubtitle: subtitle,
-                                      currentSimilar: currentSimilar,
-                                      subtitles: directLink?.subtitles ?? [],
-                                      onViewTypeChanged: onViewTypeChanged,
-                                      onQualityChanged: onQualityChanged,
-                                      onEpisodeChanged: onEpisodeChanged,
-                                      onSubtitleChanged: onSubtitleChanged,
-                                      preventHideControls: preventHideControls,
-                                      onSimilarChanged: onSimilarChanged,
-                                      onPlaybackSpeedChanged:
-                                          onPlaybackSpeedChanged,
-                                    ),
-                                  ],
+                                      Center(
+                                        child: PlayerMiddleControls(
+                                          controller: controller,
+                                          isInitializing: isInitializing,
+                                          animationController:
+                                              _animationController,
+                                          preventHideControls:
+                                              preventHideControls,
+                                        ),
+                                      ),
+                                      PlayerBottomControls(
+                                        controller: controller,
+                                        currentViewType: videoViewType,
+                                        currentPlaybackSpeed: playbackSpeed,
+                                        currentQuality: currentQuality,
+                                        currentEpisode: seasons_arr
+                                            .findCurrentEpisode(embed),
+                                        qualities: directLink?.qualities ?? [],
+                                        seasons: seasons_arr,
+                                        similar: similar_arr,
+                                        currentSubtitle: subtitle,
+                                        currentSimilar: currentSimilar,
+                                        subtitles: directLink?.subtitles ?? [],
+                                        onViewTypeChanged: onViewTypeChanged,
+                                        onQualityChanged: onQualityChanged,
+                                        onEpisodeChanged: onEpisodeChanged,
+                                        onSubtitleChanged: onSubtitleChanged,
+                                        preventHideControls:
+                                            preventHideControls,
+                                        onSimilarChanged: onSimilarChanged,
+                                        onPlaybackSpeedChanged:
+                                            onPlaybackSpeedChanged,
+                                        onEditSubtitleThemeClicked:
+                                            onEditSubtitleThemeClicked,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
               if (directLink == null)
                 Positioned(
                   top: 0,
@@ -766,7 +860,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                     similar: similar_arr,
                     currentEpisode: seasons_arr.findCurrentEpisode(embed),
                     sheetLabel: widget.selectPluginSheetLabel,
-                    onPluginChanged: onPluginChanged,
+                    onPluginChanged: onLinkChanged,
                     onSimilarChanged: onSimilarChanged,
                     onEpisodeChanged: onEpisodeChanged,
                   ),

@@ -5,11 +5,11 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
+import 'package:merlmovie_client/src/global/global.vars.dart';
 
 enum PromptDialogButton { noYes, cancelOk, ok }
 
-Future<bool> showPromptDialog(
-  BuildContext context, {
+Future<bool> showPromptDialog({
   required String title,
   String? subtitle,
   PromptDialogButton button = PromptDialogButton.noYes,
@@ -17,9 +17,11 @@ Future<bool> showPromptDialog(
   TextStyle? subtitleStyle,
   Color? backgroundColor,
   bool scrollableSubtitle = false,
+  TextStyle? negativeButtonTextStyle,
+  TextStyle? positiveButtonTextStyle,
 }) async {
   bool? accepted = await showDialog<bool?>(
-    context: context,
+    context: NavigatorKey.currentContext!,
     builder: (context) {
       return PromptDialog(
         title: title,
@@ -29,6 +31,8 @@ Future<bool> showPromptDialog(
         subtitleStyle: subtitleStyle,
         scrollableSubtitle: scrollableSubtitle,
         backgroundColor: backgroundColor,
+        negativeButtonTextStyle: negativeButtonTextStyle,
+        positiveButtonTextStyle: positiveButtonTextStyle,
       );
     },
   );
@@ -44,6 +48,8 @@ class PromptDialog extends StatelessWidget {
   final TextStyle? subtitleStyle;
   final Color? backgroundColor;
   final bool scrollableSubtitle;
+  final TextStyle? negativeButtonTextStyle;
+  final TextStyle? positiveButtonTextStyle;
   const PromptDialog({
     super.key,
     required this.title,
@@ -53,6 +59,8 @@ class PromptDialog extends StatelessWidget {
     this.subtitleStyle,
     this.backgroundColor,
     this.scrollableSubtitle = false,
+    this.negativeButtonTextStyle,
+    this.positiveButtonTextStyle,
   });
 
   @override
@@ -63,16 +71,21 @@ class PromptDialog extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(false),
           child: Text(
             "NO",
-            style: context.theme.textTheme.titleMedium?.copyWith(
-              color: context.theme.textTheme.titleMedium?.color?.withOpacity(
-                .8,
-              ),
-            ),
+            style:
+                negativeButtonTextStyle ??
+                context.theme.textTheme.titleMedium?.copyWith(
+                  color: context.theme.textTheme.titleMedium?.color
+                      ?.withOpacity(.8),
+                ),
           ),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text("YES", style: context.theme.textTheme.titleMedium),
+          child: Text(
+            "YES",
+            style:
+                positiveButtonTextStyle ?? context.theme.textTheme.titleMedium,
+          ),
         ),
       ],
       if (button == PromptDialogButton.cancelOk) ...[
@@ -80,22 +93,31 @@ class PromptDialog extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(false),
           child: Text(
             "CANCEL",
-            style: context.theme.textTheme.titleMedium?.copyWith(
-              color: context.theme.textTheme.titleMedium?.color?.withOpacity(
-                .8,
-              ),
-            ),
+            style:
+                negativeButtonTextStyle ??
+                context.theme.textTheme.titleMedium?.copyWith(
+                  color: context.theme.textTheme.titleMedium?.color
+                      ?.withOpacity(.8),
+                ),
           ),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text("OK", style: context.theme.textTheme.titleMedium),
+          child: Text(
+            "OK",
+            style:
+                positiveButtonTextStyle ?? context.theme.textTheme.titleMedium,
+          ),
         ),
       ],
       if (button == PromptDialogButton.ok)
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text("OK", style: context.theme.textTheme.titleMedium),
+          child: Text(
+            "OK",
+            style:
+                positiveButtonTextStyle ?? context.theme.textTheme.titleMedium,
+          ),
         ),
     ];
 

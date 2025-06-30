@@ -91,7 +91,7 @@ class SubtitleHelper {
         return [];
       }
     } catch (error) {
-      log("Error while getting subtitle from network: $error");
+      log("Error while getting subtitle.dart from network: $error");
       return [];
     }
   }
@@ -107,7 +107,7 @@ class SubtitleHelper {
       await controller.initial();
       return controller.subtitles;
     } catch (error) {
-      log("Error while getting subtitle from file: $error");
+      log("Error while getting subtitle.dart from file: $error");
       return [];
     }
   }

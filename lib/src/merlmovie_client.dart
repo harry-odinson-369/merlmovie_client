@@ -9,6 +9,7 @@ import 'package:flutter_auto_admob/flutter_auto_admob.dart';
 import 'package:http/http.dart';
 import 'package:merlmovie_client/src/controllers/socket_controller.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
+import 'package:merlmovie_client/src/extensions/global_key.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/helpers/http.dart';
@@ -34,13 +35,12 @@ SocketController? _controller;
 class MerlMovieClient {
   static SocketController? get socket => _controller;
 
-  static bool get isPlayerActive =>
-      MerlMovieClientPlayer.isActive && MerlMovieClientWebViewPlayer.isActive;
+  static bool get isPlayerActive => NavigatorKey.isPlayerActive;
 
   static Future closeWSSConnection() async {
     await _controller?.close();
     _controller = null;
-    navigatorKey.currentContext?.read<BrowserProvider>().close();
+    NavigatorKey.currentContext?.read<BrowserProvider>().close();
   }
 
   static Future<DirectLink?> request(
@@ -148,16 +148,16 @@ class MerlMovieClient {
         } else if (wss.action == WSSAction.progress) {
           onProgress?.call(double.parse("${wss.data["progress"] ?? 0}"));
         } else if (wss.action == WSSAction.result) {
-          navigatorKey.currentContext?.read<BrowserProvider>().close();
+          NavigatorKey.currentContext?.read<BrowserProvider>().close();
           completer.finish(Response(json.encode(wss.data), 200));
         } else if (wss.action == WSSAction.failed) {
           completer.finish(Response(json.encode(wss.data), wss.data["status"]));
         } else if (wss.action == WSSAction.browser) {
-          navigatorKey.currentContext?.read<BrowserProvider>().spawn(
+          NavigatorKey.currentContext?.read<BrowserProvider>().spawn(
             wss.browserInfo,
           );
         } else if (wss.action == WSSAction.browser_close) {
-          navigatorKey.currentContext?.read<BrowserProvider>().close();
+          NavigatorKey.currentContext?.read<BrowserProvider>().close();
         } else if (wss.action == WSSAction.browser_cookie) {
           final cookie = await BrowserWidget.getCookie(wss.data["url"]);
           final data = WSSDataModel(
@@ -169,7 +169,7 @@ class MerlMovieClient {
         } else if (wss.action == WSSAction.browser_set_cookie) {
           await BrowserWidget.setCookie(wss.data["url"], wss.data["cookie"]);
         } else if (wss.action == WSSAction.browser_visible) {
-          navigatorKey.currentContext?.read<BrowserProvider>().visible(
+          NavigatorKey.currentContext?.read<BrowserProvider>().visible(
             wss.visible,
           );
         }
@@ -317,13 +317,12 @@ class MerlMovieClient {
       ),
       title_logo: TheMovieDbApi.getImage(
         detail.real_title_logo,
-        TMDBImageSize.w500,
+        TMDBImageSize.w300,
       ),
     );
   }
 
   static Future open(
-    BuildContext context,
     PluginModel selected,
     DetailModel detail, {
     List<PluginModel> plugins = const [],
@@ -334,7 +333,8 @@ class MerlMovieClient {
     List<DeviceOrientation>? onDisposedDeviceOrientations,
     AutoAdmobConfig? adConfig,
     Future<DetailModel> Function(MovieModel movie)? onRequestDetail,
-    Future<DirectLink> Function(DirectLink link, EmbedModel embed)? onDirectLinkRequested,
+    Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
+    onDirectLinkRequested,
   }) async {
     EmbedModel embed = create_embed(selected, detail, episode);
     List<PluginModel> playerPlugins =
@@ -348,46 +348,52 @@ class MerlMovieClient {
     ];
     if (selected.openType == PluginOpenType.player) {
       if (selected.useWebView) {
-        return await Navigator.of(context).push(
+        return await Navigator.of(NavigatorKey.currentContext!).push(
           MaterialPageRoute(
             builder: (context) {
-              return MerlMovieClientWebViewPlayer(
-                embed: embed,
-                onDisposedDeviceOrientations: onDisposedDeviceOrientations,
-                adConfig: adConfig,
+              return Theme(
+                data: ThemeData.dark(),
+                child: MerlMovieClientWebViewPlayer(
+                  embed: embed,
+                  onDisposedDeviceOrientations: onDisposedDeviceOrientations,
+                  adConfig: adConfig,
+                ),
               );
             },
           ),
         );
       } else if (selected.useInternalPlayer) {
-        Navigator.of(context).push(
+        Navigator.of(NavigatorKey.currentContext!).push(
           MaterialPageRoute(
             builder: (context) {
-              return MerlMovieClientPlayer(
-                embed: embed,
-                adConfig: adConfig,
-                callback: callback,
-                seasons: detail.seasons,
-                plugins: filtered_plugins,
-                initialPosition: initialPosition,
-                onRequestDetail: onRequestDetail,
-                onDirectLinkRequested: onDirectLinkRequested,
-                selectPluginSheetLabel: selectPluginSheetLabel,
-                onDisposedDeviceOrientations: onDisposedDeviceOrientations,
-                similar:
-                    onRequestDetail != null
-                        ? [
-                          ...detail.recommendations.results,
-                          ...detail.similar.results,
-                        ]
-                        : [],
+              return Theme(
+                data: ThemeData.dark(),
+                child: MerlMovieClientPlayer(
+                  embed: embed,
+                  adConfig: adConfig,
+                  callback: callback,
+                  seasons: detail.seasons,
+                  plugins: filtered_plugins,
+                  initialPosition: initialPosition,
+                  onRequestDetail: onRequestDetail,
+                  onDirectLinkRequested: onDirectLinkRequested,
+                  selectPluginSheetLabel: selectPluginSheetLabel,
+                  onDisposedDeviceOrientations: onDisposedDeviceOrientations,
+                  similar:
+                      onRequestDetail != null
+                          ? [
+                            ...detail.recommendations.results,
+                            ...detail.similar.results,
+                          ]
+                          : [],
+                ),
               );
             },
           ),
         );
       }
     } else if (selected.openType == PluginOpenType.webview) {
-      Navigator.of(context).push(
+      Navigator.of(NavigatorKey.currentContext!).push(
         MaterialPageRoute(
           builder: (context) {
             return MerlMovieClientWebViewWidget(link: embed.requestUrl);

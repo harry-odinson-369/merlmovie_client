@@ -5,17 +5,17 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_auto_admob/flutter_auto_admob.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:merlmovie_client/merlmovie_client.dart';
+import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/extensions/uri.dart';
+import 'package:merlmovie_client/src/providers/player_state.dart';
 import 'package:merlmovie_client/src/widgets/player_loading.dart';
+import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
-
-bool _isActive = false;
 
 class MerlMovieClientWebViewPlayer extends StatefulWidget {
   final EmbedModel embed;
@@ -27,8 +27,6 @@ class MerlMovieClientWebViewPlayer extends StatefulWidget {
     this.onDisposedDeviceOrientations,
     this.adConfig,
   });
-
-  static bool get isActive => _isActive;
 
   @override
   State<MerlMovieClientWebViewPlayer> createState() =>
@@ -141,18 +139,39 @@ class _MerlMovieClientWebViewPlayerState
     }
   }
 
+  TextStyle? get dialogButtonTextStyle =>
+      context.theme.textTheme.titleMedium?.copyWith(color: Colors.white);
+
   Future<bool> askToExit() async {
     bool accepted = await showPromptDialog(
-      context,
       title: "Are you want to exit this page?",
+      titleStyle: context.theme.textTheme.titleLarge?.copyWith(
+        color: Colors.white,
+      ),
+      subtitleStyle: context.theme.textTheme.bodyMedium?.copyWith(
+        color: Colors.white70,
+      ),
+      negativeButtonTextStyle: dialogButtonTextStyle?.copyWith(
+        color: dialogButtonTextStyle?.color?.withOpacity(.8),
+      ),
+      positiveButtonTextStyle: dialogButtonTextStyle,
     );
     return accepted;
   }
 
   Future exitIfYes() async {
     bool isYes = await showPromptDialog(
-      context,
       title: "Are you want to exit this page?",
+      titleStyle: context.theme.textTheme.titleLarge?.copyWith(
+        color: Colors.white,
+      ),
+      subtitleStyle: context.theme.textTheme.bodyMedium?.copyWith(
+        color: Colors.white70,
+      ),
+      negativeButtonTextStyle: dialogButtonTextStyle?.copyWith(
+        color: dialogButtonTextStyle?.color?.withOpacity(.8),
+      ),
+      positiveButtonTextStyle: dialogButtonTextStyle,
     );
     if (isYes) {
       if (mounted) Navigator.of(context).pop();
@@ -201,7 +220,6 @@ class _MerlMovieClientWebViewPlayerState
 
   @override
   void initState() {
-    _isActive = true;
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
     WakelockPlus.enable();
     if (widget.embed.plugin.webView == WebViewProviderType.webview_flutter) {
@@ -209,12 +227,14 @@ class _MerlMovieClientWebViewPlayerState
     }
     webViewKey = GlobalKey();
     update();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PlayerStateProvider>(context, listen: false).setValue(true);
+    });
     super.initState();
   }
 
   @override
   void dispose() {
-    _isActive = false;
     MerlMovieClientPlayer.restoreDeviceOrientationAndSystemUI(
       widget.onDisposedDeviceOrientations,
     );
@@ -227,6 +247,14 @@ class _MerlMovieClientWebViewPlayerState
     autoAdmob?.destroy();
     autoAdmob = null;
     popup_links.clear();
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (NavigatorKey.currentContext != null) {
+        Provider.of<PlayerStateProvider>(
+          NavigatorKey.currentContext!,
+          listen: false,
+        ).setValue(false);
+      }
+    });
     super.dispose();
   }
 

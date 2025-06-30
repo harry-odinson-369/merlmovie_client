@@ -130,8 +130,25 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
                       child: CachedNetworkImage(
                         imageUrl: widget.embed.title_logo,
                         fit: BoxFit.contain,
-                        placeholder: (context, url) => SizedBox(),
-                        errorWidget: (context, url, error) => SizedBox(),
+                        cacheKey: widget.embed.key,
+                        placeholder:
+                            (context, url) => Text(
+                              "$prog%",
+                              style: context.theme.textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                        errorWidget:
+                            (context, url, error) => Text(
+                              "$prog%",
+                              style: context.theme.textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
                       ),
                     ),
                   ),
@@ -146,8 +163,25 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
                       child: CachedNetworkImage(
                         imageUrl: widget.embed.title_logo,
                         fit: BoxFit.contain,
-                        placeholder: (context, url) => SizedBox(),
-                        errorWidget: (context, url, error) => SizedBox(),
+                        cacheKey: widget.embed.key,
+                        placeholder:
+                            (context, url) => Text(
+                              "$prog%",
+                              style: context.theme.textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                        errorWidget:
+                            (context, url, error) => Text(
+                              "$prog%",
+                              style: context.theme.textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
                       ),
                     ),
                   if (prog > 0)
@@ -171,8 +205,25 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
                           child: CachedNetworkImage(
                             imageUrl: widget.embed.title_logo,
                             fit: BoxFit.contain,
-                            placeholder: (context, url) => SizedBox(),
-                            errorWidget: (context, url, error) => SizedBox(),
+                            cacheKey: widget.embed.key,
+                            placeholder:
+                                (context, url) => Text(
+                                  "$prog%",
+                                  style: context.theme.textTheme.titleLarge
+                                      ?.copyWith(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                            errorWidget:
+                                (context, url, error) => Text(
+                                  "$prog%",
+                                  style: context.theme.textTheme.titleLarge
+                                      ?.copyWith(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
                           ),
                         );
                       },

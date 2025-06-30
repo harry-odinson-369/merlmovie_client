@@ -155,9 +155,15 @@ class _SelectSubtitleChildListviewState
                       padding: EdgeInsets.symmetric(horizontal: 12),
                       children: [
                         ...dynamic_subtitles.build((e, i) {
-                          String link = e[widget.temp.key?.linkKey ?? "___"];
-                          String name = e[widget.temp.key?.nameKey ?? "___"];
+                          String? link = e[widget.temp.key?.linkKey ?? "___"];
+                          String? name = e[widget.temp.key?.nameKey ?? "___"];
                           bool isSelected = link == widget.current?.real_link;
+                          String? format = e[widget.temp.key?.formatKey ?? "___"];
+                          List<String> arr_spp = ["srt", "vtt"];
+                          bool isSupported = arr_spp.contains(format.toString());
+                          if (!isSupported) {
+                            return SizedBox();
+                          }
                           return InkWell(
                             onTap: () {
                               widget.temp.children = dynamic_subtitles;
@@ -188,7 +194,7 @@ class _SelectSubtitleChildListviewState
                                     SizedBox(width: 24),
                                     Flexible(
                                       child: Text(
-                                        name.replaceAll(".", " "),
+                                        name.toString(),
                                         maxLines: 2,
                                         style: context
                                             .theme

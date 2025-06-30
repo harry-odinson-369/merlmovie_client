@@ -4,16 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
+import 'package:merlmovie_client/src/models/subtitle.dart';
 import 'package:subtitle/subtitle.dart';
 import 'package:video_player/video_player.dart';
 
 class PlayerDisplayCaption extends StatelessWidget {
   final VideoPlayerController? controller;
   final List<Subtitle> subtitles;
+  final SubtitleTheme? subtitleTheme;
   const PlayerDisplayCaption({
     super.key,
     this.controller,
     required this.subtitles,
+    this.subtitleTheme,
   });
 
   static TextStyle getCaptionFontStyle(String text) {
@@ -99,10 +102,15 @@ class PlayerDisplayCaption extends StatelessWidget {
               caption.data.isNotEmpty ? "‎ ${caption.data} ‎" : "",
               textAlign: TextAlign.center,
               style: getCaptionFontStyle(caption.data).copyWith(
-                fontSize: 18,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-                backgroundColor: Colors.black.withOpacity(.8),
+                fontSize: subtitleTheme?.fontSize ?? 18,
+                color: subtitleTheme?.textColor ?? Colors.white,
+                fontWeight: subtitleTheme?.fontWeight ?? FontWeight.w500,
+                backgroundColor:
+                    subtitleTheme?.backgroundColor.withOpacity(
+                      subtitleTheme?.backgroundOpacity ?? .8,
+                    ) ??
+                    Colors.black.withOpacity(.8),
+                fontStyle: subtitleTheme?.fontStyle,
               ),
             ),
           );

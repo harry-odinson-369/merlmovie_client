@@ -87,7 +87,7 @@ class PlayerLoading extends StatelessWidget {
       if (selected.unique != current?.unique) {
         onSimilarChanged?.call(selected);
       } else {
-        changeEpisode(navigatorKey.currentContext!, seasons, currentEpisode);
+        changeEpisode(NavigatorKey.currentContext!, seasons, currentEpisode);
       }
     }
   }

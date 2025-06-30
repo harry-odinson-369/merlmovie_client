@@ -309,7 +309,7 @@ class _BrowserWidgetState extends State<BrowserWidget> {
               ),
               child: InkWell(
                 onTap: () async {
-                  navigatorKey.currentContext?.read<BrowserProvider>().close();
+                  NavigatorKey.currentContext?.read<BrowserProvider>().close();
                   await Future.delayed(const Duration(milliseconds: 300));
                   widget.onDismiss?.call();
                 },

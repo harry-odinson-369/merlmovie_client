@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
@@ -24,8 +24,19 @@ class PlayerTopControls extends StatelessWidget {
 
   static Future pop(BuildContext context) async {
     bool isPop = await showPromptDialog(
-      context,
       title: "Are you want to exit?",
+      titleStyle: context.theme.textTheme.titleLarge?.copyWith(
+        color: Colors.white,
+      ),
+      subtitleStyle: context.theme.textTheme.bodyMedium?.copyWith(
+        color: Colors.white70,
+      ),
+      positiveButtonTextStyle: context.theme.textTheme.titleMedium?.copyWith(
+        color: Colors.white,
+      ),
+      negativeButtonTextStyle: context.theme.textTheme.titleMedium?.copyWith(
+        color: Colors.white.withOpacity(.8),
+      ),
     );
     if (isPop) {
       Navigator.of(context).pop();

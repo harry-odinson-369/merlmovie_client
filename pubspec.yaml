@@ -30,6 +30,7 @@ dependencies:
   wakelock_plus: ^1.2.8
   shelf: ^1.4.2
   flutter_hls_parser: ^2.0.1
+  flutter_colorpicker: ^1.1.0
   subtitle:
     git:
       ref: master

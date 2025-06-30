@@ -1,7 +1,6 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/helpers/duration.dart';
@@ -35,6 +34,7 @@ class PlayerBottomControls extends StatelessWidget {
   final void Function(SubtitleItem? subtitle)? onSubtitleChanged;
   final void Function(MovieModel movie)? onSimilarChanged;
   final void Function()? preventHideControls;
+  final void Function()? onEditSubtitleThemeClicked;
   const PlayerBottomControls({
     super.key,
     this.controller,
@@ -55,6 +55,7 @@ class PlayerBottomControls extends StatelessWidget {
     this.onSubtitleChanged,
     this.onSimilarChanged,
     this.preventHideControls,
+    this.onEditSubtitleThemeClicked,
   });
 
   void changeView(VideoViewBuilderType current) {
@@ -160,7 +161,7 @@ class PlayerBottomControls extends StatelessWidget {
       if (selected.unique != current?.unique) {
         onSimilarChanged?.call(selected);
       } else {
-        changeEpisode(navigatorKey.currentContext!, seasons, currentEpisode);
+        changeEpisode(NavigatorKey.currentContext!, seasons, currentEpisode);
       }
     }
   }
@@ -235,6 +236,12 @@ class PlayerBottomControls extends StatelessWidget {
         icon: Icons.speed_rounded,
         label: "Playback Speed",
       ),
+      if (onEditSubtitleThemeClicked != null)
+        PlayerBottomControlsButton(
+          onTap: onEditSubtitleThemeClicked,
+          icon: Icons.format_paint,
+          label: "Subtitle Theme",
+        ),
     ];
 
     Widget progressBar(
@@ -256,8 +263,8 @@ class PlayerBottomControls extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
           barHeight: 8,
-          thumbColor: context.theme.colorScheme.primary,
-          progressBarColor: context.theme.colorScheme.primary,
+          thumbColor: Colors.red,
+          progressBarColor: Colors.red,
           baseBarColor: Colors.grey.shade700,
           bufferedBarColor: Colors.grey.shade400,
           onSeek: (pos) {

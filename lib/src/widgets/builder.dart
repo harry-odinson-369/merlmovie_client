@@ -3,6 +3,7 @@ import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/merlmovie_client.dart';
 import 'package:merlmovie_client/src/models/wss.dart';
 import 'package:merlmovie_client/src/providers/browser.dart';
+import 'package:merlmovie_client/src/providers/player_state.dart';
 import 'package:merlmovie_client/src/widgets/browser.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
@@ -10,7 +11,18 @@ import 'package:provider/single_child_widget.dart';
 Widget MerlMovieClientProvider({
   required List<SingleChildWidget> providers,
   required Widget child,
-}) => MultiProvider(providers: providers, child: child);
+}) => MultiProvider(
+  providers: [
+    ...providers,
+    ChangeNotifierProvider<PlayerStateProvider>(
+      create: (context) => PlayerStateProvider(),
+    ),
+    ChangeNotifierProvider<BrowserProvider>(
+      create: (context) => BrowserProvider(),
+    ),
+  ],
+  child: child,
+);
 
 class MerlMovieClientBrowserBuilder extends StatelessWidget {
   final Widget? child;

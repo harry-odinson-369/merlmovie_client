@@ -131,7 +131,7 @@ class PluginModel {
       useIMDb: map["use_imdb"] ?? false,
       visible:
           PluginVisibility.values.firstWhereOrNull(
-            (e) => e.name == (map["visible"] ?? PluginVisibility.all.name),
+            (e) => e.name == map["visible"],
           ) ??
           PluginVisibility.all,
       docId: map["_docId"],
@@ -212,21 +212,36 @@ class PluginModel {
   ]) {
     bool isUseTVEmbedUrl = (type == "tv" && tvEmbedUrl.isNotEmpty);
     String link = isUseTVEmbedUrl ? tvEmbedUrl : embedUrl;
+
     if (link.contains("{t}")) {
       link = link.replaceAll("{t}", type);
+    }
+    if (link.contains("___t___")) {
+      link = link.replaceAll("___t___", type);
     }
     if (link.contains("{i}")) {
       link = link.replaceAll("{i}", otherId ?? (useIMDb ? imdbId : tmdbId));
     }
+    if (link.contains("___i___")) {
+      link = link.replaceAll("___i___", otherId ?? (useIMDb ? imdbId : tmdbId));
+    }
     if (link.contains("{s}") && season != null) {
       link = link.replaceAll("{s}", season);
+    }
+    if (link.contains("___s___") && season != null) {
+      link = link.replaceAll("___s___", season);
     }
     if (link.contains("{e}") && episode != null) {
       link = link.replaceAll("{e}", episode);
     }
+    if (link.contains("___e___") && episode != null) {
+      link = link.replaceAll("___e___", episode);
+    }
     if (season == null && episode == null) {
       link = link.replaceAll("/{s}", "");
       link = link.replaceAll("/{e}", "");
+      link = link.replaceAll("/___s___", "");
+      link = link.replaceAll("/___e___", "");
     }
     return link;
   }

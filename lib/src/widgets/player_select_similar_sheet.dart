@@ -151,20 +151,22 @@ class _PlayerSelectSimilarSheetState extends State<PlayerSelectSimilarSheet> {
                                       e.real_title,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style:
-                                          context.theme.textTheme.titleMedium,
+                                      style: context.theme.textTheme.titleMedium
+                                          ?.copyWith(color: Colors.white),
                                     ),
                                     SizedBox(height: 6),
                                     Text(
                                       e.overview,
                                       maxLines: 3,
                                       overflow: TextOverflow.ellipsis,
-                                      style: context.theme.textTheme.bodyMedium,
+                                      style: context.theme.textTheme.bodyMedium
+                                          ?.copyWith(color: Colors.white70),
                                     ),
                                     SizedBox(height: 6),
                                     Text(
                                       "${e.real_year}  •  ${e.voteAverage.toStringAsFixed(1)}/10",
-                                      style: context.theme.textTheme.bodySmall,
+                                      style: context.theme.textTheme.bodySmall
+                                          ?.copyWith(color: Colors.white70),
                                     ),
                                   ],
                                 ),
