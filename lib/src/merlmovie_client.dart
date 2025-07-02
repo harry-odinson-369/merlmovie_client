@@ -67,10 +67,10 @@ class MerlMovieClient {
   }) async {
     Response response;
 
-    LoggerHelper.logMsg("Requesting to target ${embed.requestUrl}...");
+    LoggerHelper.logMsg("Requesting to target ${embed.request_url}...");
 
     String requestUrl = await InformationHelper.requestUrlWithXCI(
-      embed.requestUrl,
+      embed.request_url,
     );
 
     if (embed.isWSS) {
@@ -323,31 +323,26 @@ class MerlMovieClient {
   }
 
   static Future open(
-    PluginModel selected,
-    DetailModel detail, {
+    EmbedModel embed, {
     List<PluginModel> plugins = const [],
-    Episode? episode,
     MerlMovieClientPlayerCallback? callback,
     String? selectPluginSheetLabel,
     Duration initialPosition = Duration.zero,
     List<DeviceOrientation>? onDisposedDeviceOrientations,
     AutoAdmobConfig? adConfig,
     Future<DetailModel> Function(MovieModel movie)? onRequestDetail,
-    Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
-    onDirectLinkRequested,
+    Future<DirectLink> Function(DirectLink link, EmbedModel embed)? onDirectLinkRequested,
   }) async {
-    EmbedModel embed = create_embed(selected, detail, episode);
-    List<PluginModel> playerPlugins =
-        plugins.where((e) => e.openType != PluginOpenType.webview).toList();
+    List<PluginModel> playerPlugins = plugins.where((e) => e.openType != PluginOpenType.webview).toList();
     List<PluginModel> filtered_plugins = [
-      selected,
+      embed.plugin,
       ...[
         ...playerPlugins.where((e) => e.useInternalPlayer),
         ...playerPlugins.where((e) => e.useWebView),
-      ].where((e) => e != selected),
+      ].where((e) => e != embed.plugin),
     ];
-    if (selected.openType == PluginOpenType.player) {
-      if (selected.useWebView) {
+    if (embed.plugin.openType == PluginOpenType.player) {
+      if (embed.plugin.useWebView) {
         return await Navigator.of(NavigatorKey.currentContext!).push(
           MaterialPageRoute(
             builder: (context) {
@@ -362,7 +357,7 @@ class MerlMovieClient {
             },
           ),
         );
-      } else if (selected.useInternalPlayer) {
+      } else if (embed.plugin.useInternalPlayer) {
         Navigator.of(NavigatorKey.currentContext!).push(
           MaterialPageRoute(
             builder: (context) {
@@ -372,7 +367,7 @@ class MerlMovieClient {
                   embed: embed,
                   adConfig: adConfig,
                   callback: callback,
-                  seasons: detail.seasons,
+                  seasons: embed.detail.seasons,
                   plugins: filtered_plugins,
                   initialPosition: initialPosition,
                   onRequestDetail: onRequestDetail,
@@ -382,8 +377,8 @@ class MerlMovieClient {
                   similar:
                       onRequestDetail != null
                           ? [
-                            ...detail.recommendations.results,
-                            ...detail.similar.results,
+                            ...embed.detail.recommendations.results,
+                            ...embed.detail.similar.results,
                           ]
                           : [],
                 ),
@@ -392,11 +387,11 @@ class MerlMovieClient {
           ),
         );
       }
-    } else if (selected.openType == PluginOpenType.webview) {
+    } else if (embed.plugin.openType == PluginOpenType.webview) {
       Navigator.of(NavigatorKey.currentContext!).push(
         MaterialPageRoute(
           builder: (context) {
-            return MerlMovieClientWebViewWidget(link: embed.requestUrl);
+            return MerlMovieClientWebViewWidget(link: embed.request_url);
           },
         ),
       );

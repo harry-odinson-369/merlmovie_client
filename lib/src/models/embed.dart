@@ -55,14 +55,37 @@ class EmbedModel {
 
   String get key => "$type-$tmdbId";
 
-  String get unique =>
-      "$type-$tmdbId-$imdbId-$season-$episode-${plugin.hashCode}";
+  String get unique => "$type-$tmdbId-$imdbId-$season-$episode-${plugin.hashCode}";
 
-  String get requestUrl =>
-      plugin.getPlayableLink(type, tmdbId, imdbId, season, episode, other_id);
+  String get request_url {
+    bool isUseTVEmbedUrl = (type == "tv" && plugin.tvEmbedUrl.isNotEmpty);
+    String link = isUseTVEmbedUrl ? plugin.tvEmbedUrl : plugin.embedUrl;
+    String mediaId = other_id.isNotEmpty ? other_id : (plugin.useIMDb ? imdbId : tmdbId);
 
-  bool get isWSS =>
-      requestUrl.startsWith("ws://") || requestUrl.startsWith("wss://");
+    Map<String, dynamic> key_map = {
+      "{t}": type,
+      "{i}": mediaId,
+      "{s}": season,
+      "{e}": episode,
+      "/{s}": season.isNotEmpty ? "/$season" : null,
+      "/{e}": episode.isNotEmpty ? "/$episode" : null,
+    };
+
+    String replace(String input, String from, String to) => input.split(from).join(to);
+    bool isShouldRemove(MapEntry<String, dynamic> entry) => entry.key.startsWith("/") && entry.value == null;
+
+    for (MapEntry<String, dynamic> entry in key_map.entries) {
+      if (entry.value != null) {
+        link = replace(link, entry.key, entry.value);
+      } else if (isShouldRemove(entry)) {
+        link = replace(link, entry.key, "");
+      }
+    }
+
+    return link;
+  }
+
+  bool get isWSS => request_url.startsWith("ws://") || request_url.startsWith("wss://");
 
   String get playableIframe {
     return """
@@ -89,7 +112,7 @@ class EmbedModel {
       </head>
       <body>
         <iframe
-          src="$requestUrl"
+          src="$request_url"
           frameborder="0"
         ></iframe>
       </body>

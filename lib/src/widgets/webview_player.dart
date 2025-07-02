@@ -108,7 +108,7 @@ class _MerlMovieClientWebViewPlayerState
     if (widget.embed.plugin.useIframe) {
       webViewFlutterController?.loadHtmlString(widget.embed.playableIframe);
     } else {
-      webViewFlutterController?.loadRequest(Uri.parse(widget.embed.requestUrl));
+      webViewFlutterController?.loadRequest(Uri.parse(widget.embed.request_url));
     }
     update();
   }
@@ -287,14 +287,14 @@ class _MerlMovieClientWebViewPlayerState
                         widget.embed.plugin.useIframe
                             ? null
                             : URLRequest(
-                              url: WebUri(widget.embed.requestUrl),
+                              url: WebUri(widget.embed.request_url),
                               headers: widget.embed.plugin.headers,
                             ),
                     initialData:
                         widget.embed.plugin.useIframe
                             ? InAppWebViewInitialData(
                               data: widget.embed.playableIframe,
-                              baseUrl: WebUri(widget.embed.requestUrl),
+                              baseUrl: WebUri(widget.embed.request_url),
                             )
                             : null,
                     initialSettings: settings,

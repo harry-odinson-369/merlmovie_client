@@ -680,14 +680,16 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
     controller?.dispose();
     controller = null;
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (NavigatorKey.currentContext != null) {
-        Provider.of<PlayerStateProvider>(
-          NavigatorKey.currentContext!,
-          listen: false,
-        ).setValue(false);
-      }
-    });
+    if (restoreSystemChrome) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (NavigatorKey.currentContext != null) {
+          Provider.of<PlayerStateProvider>(
+            NavigatorKey.currentContext!,
+            listen: false,
+          ).setValue(false);
+        }
+      });
+    }
     super.dispose();
   }
 
