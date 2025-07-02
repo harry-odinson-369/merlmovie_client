@@ -33,15 +33,15 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   subtitle:
     git:
-      ref: master
       url: https://github.com/harry-odinson-369/subtitle.git
-  flutter_auto_admob:
-    git:
-      url: https://github.com/harry-odinson-369/flutter_auto_admob.git
-      ref: main
+      ref: master
   video_player:
     git:
       url: https://github.com/harry-odinson-369/video_player.git
+      ref: main
+  flutter_auto_admob:
+    git:
+      url: https://github.com/harry-odinson-369/flutter_auto_admob.git
       ref: main
 
 dev_dependencies:
