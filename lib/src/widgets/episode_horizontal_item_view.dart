@@ -45,7 +45,7 @@ class EpisodeHorizontalItemView extends StatelessWidget {
                   episode.name.isNotEmpty &&
                           !episode.name.toLowerCase().startsWith("episode")
                       ? "${episode.episodeNumber}. ${episode.name}"
-                      : "Episode ${episode.seasonNumber}",
+                      : "Episode ${episode.episodeNumber}",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.theme.textTheme.titleMedium?.copyWith(
