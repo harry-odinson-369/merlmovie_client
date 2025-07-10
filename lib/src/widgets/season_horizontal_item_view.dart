@@ -68,7 +68,7 @@ class SeasonHorizontalItemView extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    "${season.episodeCount} episodes",
+                    "${season.episodes.length} episodes",
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.theme.textTheme.bodyMedium?.copyWith(

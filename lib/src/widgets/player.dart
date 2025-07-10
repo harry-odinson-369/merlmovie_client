@@ -169,6 +169,29 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
   }
 
+  void playAsWebView() {
+    restoreSystemChrome = false;
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) {
+            return MerlMovieClientWebViewPlayer(
+              embed: embed,
+              similar: similar_arr,
+              plugins: widget.plugins,
+              adConfig: widget.adConfig,
+              callback: widget.callback,
+              onRequestDetail: widget.onRequestDetail,
+              onDirectLinkRequested: widget.onDirectLinkRequested,
+              selectPluginSheetLabel: widget.selectPluginSheetLabel,
+              onDisposedDeviceOrientations: widget.onDisposedDeviceOrientations,
+            );
+          },
+        ),
+      );
+    });
+  }
+
   Future<bool> load_plugin(
     PluginModel plugin, {
     bool showErrorOnRequest = true,
@@ -176,24 +199,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }) async {
     embed.plugin = plugin;
     if (plugin.useWebView) {
-      restoreSystemChrome = false;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) {
-            return Theme(
-              data: ThemeData.dark().copyWith(
-                colorScheme: ColorScheme.dark(primary: Colors.red),
-              ),
-              child: MerlMovieClientWebViewPlayer(
-                embed: embed,
-                onDisposedDeviceOrientations:
-                    widget.onDisposedDeviceOrientations,
-                adConfig: widget.adConfig,
-              ),
-            );
-          },
-        ),
-      );
+      playAsWebView();
       return true;
     } else {
       await MerlMovieClient.closeWSSConnection();
@@ -210,6 +216,11 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       );
       update();
       if (directLink != null) {
+        if (directLink!.status == DirectLinkDataStatus.WEBVIEW_PLAYER) {
+          embed.plugin = PluginModel.fromMap(directLink!.payload);
+          playAsWebView();
+          return true;
+        }
         if (widget.onDirectLinkRequested != null) {
           directLink = await widget.onDirectLinkRequested!(directLink!, embed);
           update();
@@ -422,26 +433,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     embed.plugin = plugin;
     update();
     if (embed.plugin.useWebView) {
-      restoreSystemChrome = false;
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) {
-              return Theme(
-                data: ThemeData.dark().copyWith(
-                  colorScheme: ColorScheme.dark(primary: Colors.red),
-                ),
-                child: MerlMovieClientWebViewPlayer(
-                  embed: embed,
-                  onDisposedDeviceOrientations:
-                      widget.onDisposedDeviceOrientations,
-                  adConfig: widget.adConfig,
-                ),
-              );
-            },
-          ),
-        );
+        playAsWebView();
       }
     } else {
       load_plugin(plugin, showErrorOnRequest: true, showErrorOnLoadLink: true);
@@ -524,6 +518,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   Future onSimilarChanged(MovieModel movie) async {
     assert(TheMovieDbApi.api_keys.isNotEmpty, "The TMDb Api keys must be set.");
     if (widget.onRequestDetail != null) {
+      await force_start_proxy();
       directLink = null;
       progress = 0;
       currentSimilar = movie;
@@ -541,7 +536,6 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         TMDBImageSize.w300,
       );
       update();
-      await force_start_proxy();
       await MerlMovieClient.closeWSSConnection();
       await controller?.dispose();
       controller = null;
@@ -665,8 +659,8 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       MerlMovieClientPlayer.restoreDeviceOrientationAndSystemUI(
         widget.onDisposedDeviceOrientations,
       );
+      WakelockPlus.disable();
     }
-    WakelockPlus.disable();
     MerlMovieClient.closeWSSConnection();
     autoAdmob?.destroy();
     autoAdmob = null;
@@ -861,7 +855,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                     seasons: seasons_arr,
                     similar: similar_arr,
                     currentEpisode: seasons_arr.findCurrentEpisode(embed),
-                    sheetLabel: widget.selectPluginSheetLabel,
+                    selectPluginSheetLabel: widget.selectPluginSheetLabel,
                     onPluginChanged: onLinkChanged,
                     onSimilarChanged: onSimilarChanged,
                     onEpisodeChanged: onEpisodeChanged,

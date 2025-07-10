@@ -149,6 +149,13 @@
             </list>
           </value>
         </entry>
+        <entry key="flutter_auto_admob">
+          <value>
+            <list>
+              <option value="$USER_HOME$/.pub-cache/git/flutter_auto_admob-6369259566ab5381e963da658f5a23c7fba99230//lib" />
+            </list>
+          </value>
+        </entry>
         <entry key="flutter_cache_manager">
           <value>
             <list>
@@ -258,6 +265,13 @@
           <value>
             <list>
               <option value="$USER_HOME$/.pub-cache/hosted/pub.dev/google_fonts-6.2.1/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="google_mobile_ads">
+          <value>
+            <list>
+              <option value="$USER_HOME$/.pub-cache/hosted/pub.dev/google_mobile_ads-5.3.1/lib" />
             </list>
           </value>
         </entry>
@@ -866,6 +880,7 @@
       </option>
     </properties>
     <CLASSES>
+      <root url="file://$USER_HOME$/.pub-cache/git/flutter_auto_admob-6369259566ab5381e963da658f5a23c7fba99230//lib" />
       <root url="file://$USER_HOME$/.pub-cache/git/subtitle-f5054665d79199ead8d4a6236a6cdef9313ac345//lib" />
       <root url="file://$USER_HOME$/.pub-cache/git/video_player-f021ba8c3e22766e90d12e22a5ba7cd8c15922a3//lib" />
       <root url="file://$USER_HOME$/.pub-cache/git/video_player_android-1b523e2f6d41abfac9374815c1341523f218a7e8//lib" />
@@ -903,6 +918,7 @@
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/flutter_lints-5.0.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/flutter_svg-2.1.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/google_fonts-6.2.1/lib" />
+      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/google_mobile_ads-5.3.1/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/html-0.15.6/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/http-1.4.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/http_parser-4.1.2/lib" />

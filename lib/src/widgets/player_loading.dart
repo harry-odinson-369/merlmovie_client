@@ -14,7 +14,7 @@ class PlayerLoading extends StatelessWidget {
   final List<PluginModel> plugins;
   final EmbedModel embed;
   final double progress;
-  final String? sheetLabel;
+  final String? selectPluginSheetLabel;
   final Episode? currentEpisode;
   final MovieModel? currentSimilar;
   final List<Season> seasons;
@@ -28,7 +28,7 @@ class PlayerLoading extends StatelessWidget {
     required this.embed,
     required this.progress,
     this.onPluginChanged,
-    this.sheetLabel,
+    this.selectPluginSheetLabel,
     this.currentEpisode,
     this.currentSimilar,
     this.seasons = const [],
@@ -42,7 +42,7 @@ class PlayerLoading extends StatelessWidget {
       context,
       plugins,
       embed,
-      label: sheetLabel,
+      label: selectPluginSheetLabel,
     );
     if (plugin != null) {
       onPluginChanged?.call(plugin);

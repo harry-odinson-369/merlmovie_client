@@ -331,61 +331,78 @@ class MerlMovieClient {
     List<DeviceOrientation>? onDisposedDeviceOrientations,
     AutoAdmobConfig? adConfig,
     Future<DetailModel> Function(MovieModel movie)? onRequestDetail,
-    Future<DirectLink> Function(DirectLink link, EmbedModel embed)? onDirectLinkRequested,
+    Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
+    onDirectLinkRequested,
+    bool pushReplacement = false,
   }) async {
-    List<PluginModel> playerPlugins = plugins.where((e) => e.openType != PluginOpenType.webview).toList();
-    List<PluginModel> filtered_plugins = [
+    var playerPlugins =
+        plugins.where((e) {
+          return e.openType != PluginOpenType.webview;
+        }).toList();
+    var filtered_plugins = [
       embed.plugin,
       ...[
         ...playerPlugins.where((e) => e.useInternalPlayer),
         ...playerPlugins.where((e) => e.useWebView),
       ].where((e) => e != embed.plugin),
     ];
+    bool isAddSimilar = onRequestDetail != null;
+    var similar = <MovieModel>[
+      if (isAddSimilar) ...embed.detail.recommendations.results,
+      if (isAddSimilar) ...embed.detail.similar.results,
+    ];
+
     if (embed.plugin.openType == PluginOpenType.player) {
       if (embed.plugin.useWebView) {
-        return await Navigator.of(NavigatorKey.currentContext!).push(
-          MaterialPageRoute(
-            builder: (context) {
-              return Theme(
-                data: ThemeData.dark(),
-                child: MerlMovieClientWebViewPlayer(
-                  embed: embed,
-                  onDisposedDeviceOrientations: onDisposedDeviceOrientations,
-                  adConfig: adConfig,
-                ),
-              );
-            },
-          ),
+        var route = MaterialPageRoute(
+          builder: (context) {
+            return Theme(
+              data: ThemeData.dark(),
+              child: MerlMovieClientWebViewPlayer(
+                embed: embed,
+                similar: similar,
+                callback: callback,
+                adConfig: adConfig,
+                plugins: filtered_plugins,
+                onRequestDetail: onRequestDetail,
+                onDirectLinkRequested: onDirectLinkRequested,
+                selectPluginSheetLabel: selectPluginSheetLabel,
+                onDisposedDeviceOrientations: onDisposedDeviceOrientations,
+              ),
+            );
+          },
         );
+        if (pushReplacement) {
+          return await Navigator.of(NavigatorKey.currentContext!).pushReplacement(route);
+        } else {
+          return await Navigator.of(NavigatorKey.currentContext!).push(route);
+        }
       } else if (embed.plugin.useInternalPlayer) {
-        Navigator.of(NavigatorKey.currentContext!).push(
-          MaterialPageRoute(
-            builder: (context) {
-              return Theme(
-                data: ThemeData.dark(),
-                child: MerlMovieClientPlayer(
-                  embed: embed,
-                  adConfig: adConfig,
-                  callback: callback,
-                  seasons: embed.detail.seasons,
-                  plugins: filtered_plugins,
-                  initialPosition: initialPosition,
-                  onRequestDetail: onRequestDetail,
-                  onDirectLinkRequested: onDirectLinkRequested,
-                  selectPluginSheetLabel: selectPluginSheetLabel,
-                  onDisposedDeviceOrientations: onDisposedDeviceOrientations,
-                  similar:
-                      onRequestDetail != null
-                          ? [
-                            ...embed.detail.recommendations.results,
-                            ...embed.detail.similar.results,
-                          ]
-                          : [],
-                ),
-              );
-            },
-          ),
+        var route = MaterialPageRoute(
+          builder: (context) {
+            return Theme(
+              data: ThemeData.dark(),
+              child: MerlMovieClientPlayer(
+                embed: embed,
+                similar: similar,
+                adConfig: adConfig,
+                callback: callback,
+                seasons: embed.detail.seasons,
+                plugins: filtered_plugins,
+                initialPosition: initialPosition,
+                onRequestDetail: onRequestDetail,
+                onDirectLinkRequested: onDirectLinkRequested,
+                selectPluginSheetLabel: selectPluginSheetLabel,
+                onDisposedDeviceOrientations: onDisposedDeviceOrientations,
+              ),
+            );
+          },
         );
+        if (pushReplacement) {
+          Navigator.of(NavigatorKey.currentContext!).pushReplacement(route);
+        } else {
+          Navigator.of(NavigatorKey.currentContext!).push(route);
+        }
       }
     } else if (embed.plugin.openType == PluginOpenType.webview) {
       Navigator.of(NavigatorKey.currentContext!).push(

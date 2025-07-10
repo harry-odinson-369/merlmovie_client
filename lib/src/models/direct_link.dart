@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/helpers/map.dart';
 
-enum DirectLinkDataStatus { PROGRESS_STATUS, FINAL_RESULT }
+enum DirectLinkDataStatus { PROGRESS_STATUS, FINAL_RESULT, WEBVIEW_PLAYER }
 
 enum SubtitleRootType { fetch, normal }
 
