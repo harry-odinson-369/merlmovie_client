@@ -61,6 +61,8 @@ class _MerlMovieClientWebViewPlayerState
 
   bool restoreSystemChrome = true;
 
+  ValueNotifier<bool> hideBarButton = ValueNotifier(false);
+
   List<MerlMovieClientWebViewWidget> popup_links = [];
 
   InAppWebViewSettings get settings => InAppWebViewSettings(
@@ -76,6 +78,8 @@ class _MerlMovieClientWebViewPlayerState
   Timer? _webProgressTimer;
 
   AutoAdmob? autoAdmob;
+
+  Timer? _hideBarButtonsTimer;
 
   Future createWebViewFlutterController() async {
     if (Platform.isIOS) {
@@ -147,6 +151,9 @@ class _MerlMovieClientWebViewPlayerState
         isLoading = false;
         update();
         createAutoAd();
+        Future.delayed(const Duration(seconds: 3), () {
+          hideBarButton.value = true;
+        });
       });
     }
   }
@@ -182,6 +189,7 @@ class _MerlMovieClientWebViewPlayerState
   }
 
   Future exitIfYes() async {
+    toggleShowHideBarButtons(false);
     bool isYes = await showPromptDialog(
       title: "Are you want to exit this page?",
       titleStyle: context.theme.textTheme.titleLarge?.copyWith(
@@ -334,6 +342,7 @@ class _MerlMovieClientWebViewPlayerState
   }
 
   void changePlugin() async {
+    toggleShowHideBarButtons(false);
     PluginModel? plugin = await MerlMovieClientPlayer.selectPlugin(
       context,
       widget.plugins,
@@ -350,6 +359,7 @@ class _MerlMovieClientWebViewPlayerState
   }
 
   void changeEpisode() async {
+    toggleShowHideBarButtons(false);
     Episode? episode = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -375,6 +385,7 @@ class _MerlMovieClientWebViewPlayerState
   }
 
   void changeSimilar() async {
+    toggleShowHideBarButtons(false);
     var current = MovieModel.fromJson(widget.embed.detail.toJson());
     MovieModel? selected = await showModalBottomSheet(
       context: context,
@@ -392,6 +403,17 @@ class _MerlMovieClientWebViewPlayerState
       } else {
         changeEpisode();
       }
+    }
+  }
+
+  void toggleShowHideBarButtons([bool? value]) {
+    hideBarButton.value = value ?? !hideBarButton.value;
+    _hideBarButtonsTimer?.cancel();
+    _hideBarButtonsTimer = null;
+    if (!hideBarButton.value) {
+      _hideBarButtonsTimer ??= Timer(Duration(seconds: 3), () {
+        hideBarButton.value = true;
+      });
     }
   }
 
@@ -511,79 +533,120 @@ class _MerlMovieClientWebViewPlayerState
               Positioned(
                 right: 16,
                 top: 16,
-                child: Row(
-                  children: [
-                    if (widget.similar.isNotEmpty)
+                child: ValueListenableBuilder(
+                  valueListenable: hideBarButton,
+                  builder: (context, isHideBarButton, _) {
+                    final buttons = [
+                      if (widget.similar.isNotEmpty)
+                        Container(
+                          margin: EdgeInsets.only(right: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          height: 32,
+                          width: 32,
+                          child: InkWell(
+                            onTap: changeSimilar,
+                            child: Icon(
+                              CupertinoIcons.list_bullet_below_rectangle,
+                              color: Colors.white.withOpacity(.8),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      if (widget.embed.detail.seasons.isNotEmpty)
+                        Container(
+                          margin: EdgeInsets.only(right: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          height: 32,
+                          width: 32,
+                          child: InkWell(
+                            onTap: changeEpisode,
+                            child: Icon(
+                              CupertinoIcons.rectangle_stack,
+                              color: Colors.white.withOpacity(.8),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      if (widget.plugins.isNotEmpty)
+                        Container(
+                          margin: EdgeInsets.only(right: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          height: 32,
+                          width: 32,
+                          child: InkWell(
+                            onTap: changePlugin,
+                            child: Icon(
+                              Icons.format_list_bulleted,
+                              color: Colors.white.withOpacity(.8),
+                              size: 22,
+                            ),
+                          ),
+                        ),
                       Container(
                         margin: EdgeInsets.only(right: 16),
                         decoration: BoxDecoration(
                           color: Colors.black54,
                           borderRadius: BorderRadius.circular(99),
                         ),
-                        height: 26,
-                        width: 26,
+                        height: 32,
+                        width: 32,
                         child: InkWell(
-                          onTap: changeSimilar,
+                          onTap: exitIfYes,
                           child: Icon(
-                            CupertinoIcons.list_bullet_below_rectangle,
+                            Icons.close,
                             color: Colors.white.withOpacity(.8),
-                            size: 18,
+                            size: 24,
                           ),
                         ),
                       ),
-                    if (widget.embed.detail.seasons.isNotEmpty)
-                      Container(
-                        margin: EdgeInsets.only(right: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                        height: 26,
-                        width: 26,
-                        child: InkWell(
-                          onTap: changeEpisode,
-                          child: Icon(
-                            CupertinoIcons.rectangle_stack,
-                            color: Colors.white.withOpacity(.8),
-                            size: 18,
+                    ];
+                    return Row(
+                      children: [
+                        AnimatedContainer(
+                          width:
+                              (isHideBarButton ? 0 : 48 * buttons.length)
+                                  .toDouble(),
+                          duration: Duration(milliseconds: 200),
+                          child: SizedBox(
+                            height: 32,
+                            child: ListView(
+                              shrinkWrap: true,
+                              padding: EdgeInsets.zero,
+                              scrollDirection: Axis.horizontal,
+                              children: buttons,
+                            ),
                           ),
                         ),
-                      ),
-                    if (widget.plugins.isNotEmpty)
-                      Container(
-                        margin: EdgeInsets.only(right: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                        height: 26,
-                        width: 26,
-                        child: InkWell(
-                          onTap: changePlugin,
-                          child: Icon(
-                            Icons.format_list_bulleted,
-                            color: Colors.white.withOpacity(.8),
-                            size: 20,
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          height: 32,
+                          width: 32,
+                          child: InkWell(
+                            onTap: toggleShowHideBarButtons,
+                            child: Icon(
+                              isHideBarButton
+                                  ? CupertinoIcons.back
+                                  : CupertinoIcons.forward,
+                              color: Colors.white.withOpacity(.8),
+                              size: 24,
+                            ),
                           ),
                         ),
-                      ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                      height: 26,
-                      width: 26,
-                      child: InkWell(
-                        onTap: exitIfYes,
-                        child: Icon(
-                          Icons.close,
-                          color: Colors.white.withOpacity(.8),
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ),
           ],
