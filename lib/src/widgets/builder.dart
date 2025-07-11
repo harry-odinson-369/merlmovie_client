@@ -40,6 +40,7 @@ class MerlMovieClientBrowserBuilder extends StatelessWidget {
         builder: (context, virtual, _) {
           bool isVisible = virtual.info?.visible == BrowserWebVisible.yes;
           Widget webView(WSSBrowserWebDataModel browserInfo) => BrowserWidget(
+            key: Key("__robot_browser"),
             info: browserInfo,
             socket: MerlMovieClient.socket,
             onNavigationRequest: (url, isMainFrame) {
