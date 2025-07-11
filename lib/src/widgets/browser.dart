@@ -148,9 +148,11 @@ class _BrowserWidgetState extends State<BrowserWidget> {
               ? NavigationDecision.navigate
               : NavigationDecision.prevent;
         },
-        onPageFinished: (url) async {
-          widget.onNavigationFinished(url);
+        onProgress: (progress) async {
+          var url = await controller0?.runJavaScriptReturningResult("window.location.href");
+          onWebProgress(progress.toDouble(), url.toString());
         },
+        onPageFinished: (url) => onWebProgress(100, url),
       ),
     );
     controller0?.loadRequest(
@@ -213,6 +215,20 @@ class _BrowserWidgetState extends State<BrowserWidget> {
         double.parse(wss.data["y"].toString()),
       );
       click(offset);
+    }
+  }
+
+  Timer? _webProgressTimer;
+
+  void onWebProgress(double progress, String url) {
+    if (progress >= 100) {
+      _webProgressTimer?.cancel();
+      _webProgressTimer = null;
+      _webProgressTimer ??= Timer(const Duration(seconds: 1), () {
+        Future.delayed(const Duration(seconds: 1), () {
+          widget.onNavigationFinished(url);
+        });
+      });
     }
   }
 
@@ -290,9 +306,15 @@ class _BrowserWidgetState extends State<BrowserWidget> {
                       ? NavigationActionPolicy.ALLOW
                       : NavigationActionPolicy.CANCEL;
                 },
+                onProgressChanged: (controller, progress) async {
+                  var url = await controller.evaluateJavascript(
+                    source: "window.location.href",
+                  );
+                  onWebProgress(progress.toDouble(), url.toString());
+                },
                 onLoadStop: (controller, url) async {
                   controller1 = controller;
-                  widget.onNavigationFinished(url.toString());
+                  onWebProgress(100, url.toString());
                 },
               ),
             ),

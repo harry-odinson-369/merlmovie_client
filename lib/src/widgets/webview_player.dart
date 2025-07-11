@@ -105,12 +105,7 @@ class _MerlMovieClientWebViewPlayerState
     webViewFlutterController?.setJavaScriptMode(JavaScriptMode.unrestricted);
     webViewFlutterController?.setNavigationDelegate(
       NavigationDelegate(
-        onPageFinished: (url) {
-          if (widget.embed.plugin.script.isNotEmpty) {
-            webViewFlutterController?.runJavaScript(widget.embed.plugin.script);
-          }
-          onWebRequestProgress(100);
-        },
+        onPageFinished: (url) => onWebRequestProgress(100),
         onProgress: (pro) => onWebRequestProgress(pro.toDouble()),
         onNavigationRequest: (request) async {
           final uri = Uri.parse(request.url);
@@ -141,7 +136,10 @@ class _MerlMovieClientWebViewPlayerState
 
   void update() => mounted ? setState(() {}) : () {};
 
-  void onWebRequestProgress(double prog) {
+  void onWebRequestProgress(
+    double prog, [
+    InAppWebViewController? inAppWebviewController,
+  ]) {
     webProgress = prog;
     update();
     if (prog >= 100) {
@@ -151,6 +149,14 @@ class _MerlMovieClientWebViewPlayerState
         isLoading = false;
         update();
         createAutoAd();
+        Future.delayed(const Duration(seconds: 1), () {
+          if (widget.embed.plugin.script.isNotEmpty) {
+            webViewFlutterController?.runJavaScript(widget.embed.plugin.script);
+            inAppWebviewController?.evaluateJavascript(
+              source: widget.embed.plugin.script,
+            );
+          }
+        });
         Future.delayed(const Duration(seconds: 3), () {
           hideBarButton.value = true;
         });
@@ -205,15 +211,6 @@ class _MerlMovieClientWebViewPlayerState
     );
     if (isYes) {
       if (mounted) Navigator.of(context).pop();
-    }
-  }
-
-  void onFlutterInAppWebViewLoadStop(
-    InAppWebViewController controller,
-    WebUri? uri,
-  ) {
-    if (widget.embed.plugin.script.isNotEmpty) {
-      controller.evaluateJavascript(source: widget.embed.plugin.script);
     }
   }
 
@@ -501,10 +498,14 @@ class _MerlMovieClientWebViewPlayerState
                               : null,
                       initialSettings: settings,
                       onProgressChanged:
-                          (controller, progress) =>
-                              onWebRequestProgress(progress.toDouble()),
+                          (controller, progress) => onWebRequestProgress(
+                            progress.toDouble(),
+                            controller,
+                          ),
                       onCreateWindow: onCreateWindow,
-                      onLoadStop: onFlutterInAppWebViewLoadStop,
+                      onLoadStop:
+                          (controller, url) =>
+                              onWebRequestProgress(100, controller),
                       shouldOverrideUrlLoading:
                           onFlutterInAppWebViewShouldOverrideUrlLoading,
                     ),
