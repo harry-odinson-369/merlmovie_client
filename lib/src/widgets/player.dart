@@ -48,8 +48,7 @@ class MerlMovieClientPlayer extends StatefulWidget {
   final String? selectPluginSheetLabel;
   final AutoAdmobConfig? adConfig;
   final Future<DetailModel> Function(MovieModel movie)? onRequestDetail;
-  final Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
-  onDirectLinkRequested;
+  final Future<DirectLink> Function(DirectLink link, EmbedModel embed)? onDirectLinkRequested;
   const MerlMovieClientPlayer({
     super.key,
     required this.embed,
