@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:ui';
 import 'dart:io';
 
@@ -110,6 +111,9 @@ class PluginModel {
       allowedDomains0.add(uri.domainNameOnly);
     }
 
+    allowedDomains0 = LinkedHashSet<String>.from(allowedDomains0).toList();
+    allowedDomains0.removeWhere((e) => e == "" || e == " " || e.isEmpty);
+
     return PluginModel(
       openType: PluginOpenType.values.firstWhere(
         (e) => e.name == (map["open_type"] ?? PluginOpenType.player.name),
@@ -192,16 +196,12 @@ class PluginModel {
   };
 
   bool _compare_arr(List a, List b) {
+    if (a.isEmpty && b.isEmpty) return true;
     return a.every((item) => b.contains(item));
   }
 
-  @override
-  bool operator ==(Object other) {
-    return other is PluginModel &&
-        name == other.name &&
-        embedUrl == other.embedUrl &&
-        tvEmbedUrl == other.tvEmbedUrl &&
-        streamType == other.streamType &&
+  bool compare(PluginModel other) {
+    return streamType == other.streamType &&
         mediaType == other.mediaType &&
         visible == other.visible &&
         _compare_arr(allowedDomains, other.allowedDomains) &&
@@ -212,16 +212,13 @@ class PluginModel {
   }
 
   @override
-  int get hashCode =>
-      name.hashCode ^
-      embedUrl.hashCode ^
-      tvEmbedUrl.hashCode ^
-      streamType.hashCode ^
-      mediaType.hashCode ^
-      visible.hashCode ^
-      allowedDomains.hashCode ^
-      openType.hashCode ^
-      useIMDb.hashCode ^
-      script.hashCode ^
-      webView.hashCode;
+  bool operator ==(Object other) {
+    return other is PluginModel &&
+        name == other.name &&
+        embedUrl == other.embedUrl &&
+        tvEmbedUrl == other.tvEmbedUrl;
+  }
+
+  @override
+  int get hashCode => name.hashCode ^ embedUrl.hashCode ^ tvEmbedUrl.hashCode;
 }
