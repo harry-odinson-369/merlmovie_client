@@ -191,14 +191,37 @@ class PluginModel {
     "query": query,
   };
 
+  bool _compare_arr(List a, List b) {
+    return a.every((item) => b.contains(item));
+  }
+
   @override
   bool operator ==(Object other) {
     return other is PluginModel &&
         name == other.name &&
         embedUrl == other.embedUrl &&
-        tvEmbedUrl == other.tvEmbedUrl;
+        tvEmbedUrl == other.tvEmbedUrl &&
+        streamType == other.streamType &&
+        mediaType == other.mediaType &&
+        visible == other.visible &&
+        _compare_arr(allowedDomains, other.allowedDomains) &&
+        openType == other.openType &&
+        useIMDb == other.useIMDb &&
+        script == other.script &&
+        webView == other.webView;
   }
 
   @override
-  int get hashCode => name.hashCode ^ embedUrl.hashCode ^ tvEmbedUrl.hashCode;
+  int get hashCode =>
+      name.hashCode ^
+      embedUrl.hashCode ^
+      tvEmbedUrl.hashCode ^
+      streamType.hashCode ^
+      mediaType.hashCode ^
+      visible.hashCode ^
+      allowedDomains.hashCode ^
+      openType.hashCode ^
+      useIMDb.hashCode ^
+      script.hashCode ^
+      webView.hashCode;
 }
