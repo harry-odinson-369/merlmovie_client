@@ -19,6 +19,8 @@ export './src/widgets/player.dart';
 export './src/widgets/builder.dart';
 export './src/widgets/player_subtitle_theme_editor.dart';
 
+export './src/extensions/uri.dart';
+
 export './src/providers/browser.dart';
 
 export 'package:wakelock_plus/wakelock_plus.dart' show WakelockPlus;

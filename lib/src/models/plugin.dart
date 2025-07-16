@@ -7,6 +7,8 @@ import 'package:merlmovie_client/src/extensions/uri.dart';
 import 'package:merlmovie_client/src/helpers/color.dart';
 import 'package:merlmovie_client/src/helpers/map.dart';
 
+enum PluginSource { file, server, create }
+
 enum StreamType { webview, iframe, api, internal }
 
 enum PluginVisibility { all, ios, android, none, development }
@@ -37,6 +39,7 @@ class PluginModel {
   String version = "1.0.0";
   WebViewProviderType webView = WebViewProviderType.flutter_inappwebview;
   List<String> query = [];
+  PluginSource installedSource = PluginSource.server;
 
   ///[allowedDomains] is only work when [webView] set to [WebViewProviderType.webview_flutter]
   List<String> allowedDomains = [];
@@ -82,6 +85,7 @@ class PluginModel {
     this.author = "Anonymous",
     this.version = "1.0.0",
     this.query = const [],
+    this.installedSource = PluginSource.server,
   });
 
   String get website {
@@ -154,6 +158,11 @@ class PluginModel {
           WebViewProviderType.flutter_inappwebview,
       allowedDomains: allowedDomains0,
       query: List<String>.from(map["query"] ?? []),
+      installedSource:
+          PluginSource.values.firstWhereOrNull((e) {
+            return e.name == (map["installed_source"] ?? "server");
+          }) ??
+          PluginSource.server,
     );
   }
 
@@ -193,6 +202,7 @@ class PluginModel {
     "webview_type": webView.name,
     "allowed_domains": allowedDomains,
     "query": query,
+    "installed_source": installedSource.name,
   };
 
   bool _compare_arr(List a, List b) {
