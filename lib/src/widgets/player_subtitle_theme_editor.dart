@@ -214,14 +214,10 @@ class PlayerSubtitleThemeEditor extends StatelessWidget {
                             const SizedBox(height: 14),
                             popup(
                               "FontWeight: ",
-                              value: current.fontWeight.toString().replaceAll(
-                                "FontWeight.",
-                                "",
-                              ),
+                              value: "w${current.fontWeight.value}",
                               items: [
                                 ...FontWeight.values.build((e, i) {
-                                  bool selected =
-                                      e.value == current.fontWeight.value;
+                                  bool selected = e.value == current.fontWeight.value;
                                   return PopupMenuItem(
                                     value: e.value.toString(),
                                     onTap: () {

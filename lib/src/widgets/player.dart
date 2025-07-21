@@ -493,11 +493,13 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   Future onSubtitleChanged(SubtitleItem? subtitle) async {
-    this.subtitle = subtitle;
-    update();
-    if (subtitle == null) {
+    if (subtitle?.link == "off") {
       subtitles.value = [];
-    } else {
+      this.subtitle = subtitle;
+      update();
+    } else if (subtitle != null) {
+      this.subtitle = subtitle;
+      update();
       List<Subtitle> arr = await compute((subtitle) async {
         bool isFetch = subtitle.type == SubtitleRootType.fetch;
         String link = subtitle.real_link ?? subtitle.link;

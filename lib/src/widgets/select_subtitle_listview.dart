@@ -30,7 +30,9 @@ class _SelectSubtitleListviewState extends State<SelectSubtitleListview> {
     autoScrollController = AutoScrollController(axis: Axis.vertical);
     update();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      int index = widget.subtitles.indexWhere((e) => e.link == widget.current?.link);
+      int index = widget.subtitles.indexWhere(
+        (e) => e.link == widget.current?.link,
+      );
       if (index != -1) {
         autoScrollController.scrollToIndex(
           index,
@@ -49,6 +51,7 @@ class _SelectSubtitleListviewState extends State<SelectSubtitleListview> {
 
   @override
   Widget build(BuildContext context) {
+    bool isOff = widget.current == null || widget.current?.link == "off";
     return ListView(
       shrinkWrap: true,
       controller: autoScrollController,
@@ -56,27 +59,27 @@ class _SelectSubtitleListviewState extends State<SelectSubtitleListview> {
       children: [
         InkWell(
           onTap: () {
-            widget.onChanged?.call(null);
+            var off = SubtitleItem(
+              name: "Off",
+              link: "off",
+              type: SubtitleRootType.normal,
+            );
+            widget.onChanged?.call(off);
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               children: [
                 SizedBox(width: 24),
-                if (widget.current == null)
-                  Icon(
-                    Icons.done,
-                    size: 26,
-                    color: Colors.white,
-                  ),
-                if (widget.current != null) SizedBox(width: 26),
+                if (isOff)
+                  Icon(Icons.done, size: 26, color: Colors.white),
+                if (!isOff) SizedBox(width: 26),
                 SizedBox(width: 24),
                 Flexible(
                   child: Text(
                     "Off",
                     maxLines: 2,
-                    style: context.theme.textTheme.titleMedium
-                        ?.copyWith(
+                    style: context.theme.textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),

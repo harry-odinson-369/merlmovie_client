@@ -11,7 +11,6 @@ import 'package:merlmovie_client/merlmovie_client.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
-import 'package:merlmovie_client/src/extensions/uri.dart';
 import 'package:merlmovie_client/src/helpers/themoviedb.dart';
 import 'package:merlmovie_client/src/providers/player_state.dart';
 import 'package:merlmovie_client/src/widgets/player_loading.dart';

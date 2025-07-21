@@ -60,7 +60,7 @@ class SubtitleTheme {
     textColor: Color(map["textColor"] ?? Colors.white.value),
     backgroundColor: Color(map["backgroundColor"] ?? Colors.black.value),
     backgroundOpacity: map["backgroundOpacity"] ?? .8,
-    bottomPad: map["bottomPad"] ?? 24,
+    bottomPad: map["bottomPad"] ?? 40,
     fontWeight: FontWeight.values.firstWhere(
       (e) => e.value == (map["fontWeight"] ?? FontWeight.w500.value),
     ),
