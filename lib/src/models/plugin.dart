@@ -9,20 +9,20 @@ import 'package:merlmovie_client/src/helpers/map.dart';
 
 enum PluginSource { file, server, create }
 
-enum StreamType { webview, iframe, api, internal }
+enum StreamType { webview, iframe, api }
 
 enum PluginVisibility { all, ios, android, none, development }
 
 enum MediaType { multi, tv, movie }
 
-enum WebViewProviderType { webview_flutter, flutter_inappwebview }
-
 enum PluginOpenType { player, webview }
+
+enum WebViewProviderType { webview_flutter, flutter_inappwebview }
 
 class PluginModel {
   PluginOpenType openType = PluginOpenType.player;
   Color? logoBackgroundColor;
-  StreamType streamType = StreamType.internal;
+  StreamType streamType = StreamType.api;
   MediaType mediaType = MediaType.multi;
   String embedUrl = "";
   String tvEmbedUrl = "";
@@ -37,9 +37,9 @@ class PluginModel {
   PluginVisibility visible = PluginVisibility.all;
   String? docId;
   String version = "1.0.0";
-  WebViewProviderType webView = WebViewProviderType.flutter_inappwebview;
   List<String> query = [];
   PluginSource installedSource = PluginSource.server;
+  WebViewProviderType webView = WebViewProviderType.webview_flutter;
 
   ///[allowedDomains] is only work when [webView] set to [WebViewProviderType.webview_flutter]
   List<String> allowedDomains = [];
@@ -49,8 +49,7 @@ class PluginModel {
   bool get useWebView =>
       streamType == StreamType.iframe || streamType == StreamType.webview;
 
-  bool get useInternalPlayer =>
-      streamType == StreamType.api || streamType == StreamType.internal;
+  bool get useInternalPlayer => streamType == StreamType.api;
 
   bool get useIframe => streamType == StreamType.iframe;
 
@@ -66,8 +65,11 @@ class PluginModel {
 
   PluginModel({
     this.openType = PluginOpenType.player,
-    this.streamType = StreamType.internal,
+    this.streamType = StreamType.api,
     this.mediaType = MediaType.multi,
+    this.webView = WebViewProviderType.webview_flutter,
+    this.visible = PluginVisibility.all,
+    this.installedSource = PluginSource.server,
     this.embedUrl = "",
     this.tvEmbedUrl = "",
     this.headers,
@@ -77,15 +79,12 @@ class PluginModel {
     this.script = "",
     this.officialWebsite = "",
     this.useIMDb = false,
-    this.visible = PluginVisibility.all,
     this.docId,
     this.logoBackgroundColor,
-    this.webView = WebViewProviderType.flutter_inappwebview,
     this.allowedDomains = const [],
     this.author = "Anonymous",
     this.version = "1.0.0",
     this.query = const [],
-    this.installedSource = PluginSource.server,
   });
 
   String get website {
@@ -118,16 +117,9 @@ class PluginModel {
     allowedDomains0 = LinkedHashSet<String>.from(allowedDomains0).toList();
     allowedDomains0.removeWhere((e) => e == "" || e == " " || e.isEmpty);
 
+    var bgColor = ColorUtilities.fromHex(map["logo_background_color"]);
+
     return PluginModel(
-      openType: PluginOpenType.values.firstWhere(
-        (e) => e.name == (map["open_type"] ?? PluginOpenType.player.name),
-      ),
-      streamType: StreamType.values.firstWhere(
-        (e) => e.name == (map["stream_type"] ?? StreamType.internal.name),
-      ),
-      mediaType: MediaType.values.firstWhere(
-        (e) => e.name == (map["media_type"] ?? "multi"),
-      ),
       embedUrl: url ?? "",
       tvEmbedUrl: tvUrl ?? "",
       headers: MapUtilities.convert<String, String>(map["headers"]),
@@ -137,32 +129,33 @@ class PluginModel {
       script: map["script"] ?? "",
       officialWebsite: map["official_website"] ?? "",
       useIMDb: map["use_imdb"] ?? false,
-      visible:
-          PluginVisibility.values.firstWhereOrNull(
-            (e) => e.name == map["visible"],
-          ) ??
-          PluginVisibility.all,
       docId: map["_docId"],
-      logoBackgroundColor:
-          map["logo_background_color"] != null
-              ? ColorUtilities.fromHex(map["logo_background_color"])
-              : null,
+      logoBackgroundColor: bgColor,
       author: map["author"] ?? "Anonymous",
       version: map["version"] ?? "1.0.0",
-      webView:
-          WebViewProviderType.values.firstWhereOrNull((e) {
-            return (map["webview_type"] ??
-                    WebViewProviderType.flutter_inappwebview.name) ==
-                e.name;
-          }) ??
-          WebViewProviderType.flutter_inappwebview,
       allowedDomains: allowedDomains0,
       query: List<String>.from(map["query"] ?? []),
-      installedSource:
-          PluginSource.values.firstWhereOrNull((e) {
-            return e.name == (map["installed_source"] ?? "server");
-          }) ??
-          PluginSource.server,
+      visible: PluginVisibility.values.findEnum(
+        map["visible"],
+        PluginVisibility.all,
+      ),
+      installedSource: PluginSource.values.findEnum(
+        map["installed_source"],
+        PluginSource.server,
+      ),
+      openType: PluginOpenType.values.findEnum(
+        map["open_type"],
+        PluginOpenType.player,
+      ),
+      streamType: StreamType.values.findEnum(
+        map["stream_type"],
+        StreamType.api,
+      ),
+      webView: WebViewProviderType.values.findEnum(
+        map["webview_type"],
+        WebViewProviderType.webview_flutter,
+      ),
+      mediaType: MediaType.values.findEnum(map["media_type"], MediaType.multi),
     );
   }
 
@@ -199,10 +192,10 @@ class PluginModel {
     "logo_background_color": logoBackgroundColor != null ? logoBgToHex : null,
     "author": author,
     "version": version,
-    "webview_type": webView.name,
     "allowed_domains": allowedDomains,
     "query": query,
     "installed_source": installedSource.name,
+    "webview_type": webView.name,
   };
 
   bool _compare_arr(List a, List b) {
@@ -217,8 +210,7 @@ class PluginModel {
         _compare_arr(allowedDomains, other.allowedDomains) &&
         openType == other.openType &&
         useIMDb == other.useIMDb &&
-        script == other.script &&
-        webView == other.webView;
+        script == other.script;
   }
 
   @override

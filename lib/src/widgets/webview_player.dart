@@ -26,7 +26,6 @@ class MerlMovieClientWebViewPlayer extends StatefulWidget {
   final List<PluginModel> plugins;
   final String? selectPluginSheetLabel;
   final List<DeviceOrientation>? onDisposedDeviceOrientations;
-  final AutoAdmobConfig? adConfig;
   final Future<DetailModel> Function(MovieModel movie)? onRequestDetail;
   final MerlMovieClientPlayerCallback? callback;
   final Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
@@ -36,7 +35,6 @@ class MerlMovieClientWebViewPlayer extends StatefulWidget {
     super.key,
     required this.embed,
     this.onDisposedDeviceOrientations,
-    this.adConfig,
     this.plugins = const [],
     this.similar = const [],
     this.selectPluginSheetLabel,
@@ -52,6 +50,8 @@ class MerlMovieClientWebViewPlayer extends StatefulWidget {
 
 class _MerlMovieClientWebViewPlayerState
     extends State<MerlMovieClientWebViewPlayer> {
+  Function? backupAdCallback;
+
   double webProgress = 0;
 
   bool isLoading = true;
@@ -75,8 +75,6 @@ class _MerlMovieClientWebViewPlayerState
   WebViewController? webViewFlutterController;
 
   Timer? _webProgressTimer;
-
-  AutoAdmob? autoAdmob;
 
   Timer? _hideBarButtonsTimer;
 
@@ -164,13 +162,10 @@ class _MerlMovieClientWebViewPlayerState
   }
 
   void createAutoAd() {
-    if (widget.adConfig != null && autoAdmob == null) {
-      autoAdmob = AutoAdmob();
-      autoAdmob?.initialize(config: widget.adConfig);
-      autoAdmob?.onInterstitialAdReady = () {
-        autoAdmob?.showInterstitialAd();
-      };
-    }
+    backupAdCallback = FlutterAutoAdmob.ads.interstitial.onLoadedCallback;
+    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
+      FlutterAutoAdmob.ads.interstitial.show();
+    };
   }
 
   TextStyle? get dialogButtonTextStyle =>
@@ -262,7 +257,6 @@ class _MerlMovieClientWebViewPlayerState
         newEmbed,
         pushReplacement: true,
         plugins: widget.plugins,
-        adConfig: widget.adConfig,
         callback: widget.callback,
         onRequestDetail: widget.onRequestDetail,
         onDirectLinkRequested: widget.onDirectLinkRequested,
@@ -435,23 +429,22 @@ class _MerlMovieClientWebViewPlayerState
         widget.onDisposedDeviceOrientations,
       );
       WakelockPlus.disable();
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (NavigatorKey.currentContext != null) {
+          Provider.of<PlayerStateProvider>(
+            NavigatorKey.currentContext!,
+            listen: false,
+          ).setValue(false);
+        }
+      });
     }
+    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = backupAdCallback;
     webViewFlutterController?.setNavigationDelegate(NavigationDelegate());
     webViewFlutterController?.loadRequest(Uri.parse("about:blank"));
     webViewFlutterController = null;
     webViewKey?.currentState?.dispose();
     webViewKey = null;
-    autoAdmob?.destroy();
-    autoAdmob = null;
     popup_links.clear();
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (NavigatorKey.currentContext != null) {
-        Provider.of<PlayerStateProvider>(
-          NavigatorKey.currentContext!,
-          listen: false,
-        ).setValue(false);
-      }
-    });
     super.dispose();
   }
 

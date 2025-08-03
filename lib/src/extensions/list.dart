@@ -1,4 +1,12 @@
 extension ListExtension<T> on List<T> {
+  T findEnum(String? name, T defaultValue) {
+    var value = firstWhereOrNull((e) {
+      String def = defaultValue.toString().split(".").last;
+      return (e.toString().split(".").last) == (name ?? def);
+    });
+    return value ?? defaultValue;
+  }
+
   T? firstWhereOrNull(bool Function(T element) test) {
     for (var element in this) {
       if (test(element)) return element;

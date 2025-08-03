@@ -3,7 +3,8 @@
 import 'dart:ui';
 
 class ColorUtilities {
-  static Color fromHex(String hexString) {
+  static Color? fromHex(String? hexString) {
+    if (hexString == null) return null;
     final buffer = StringBuffer();
     if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
     buffer.write(hexString.replaceFirst('#', ''));

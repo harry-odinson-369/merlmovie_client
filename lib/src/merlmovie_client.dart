@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_auto_admob/flutter_auto_admob.dart';
 import 'package:http/http.dart';
 import 'package:merlmovie_client/src/controllers/socket_controller.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
@@ -329,7 +328,6 @@ class MerlMovieClient {
     String? selectPluginSheetLabel,
     Duration initialPosition = Duration.zero,
     List<DeviceOrientation>? onDisposedDeviceOrientations,
-    AutoAdmobConfig? adConfig,
     Future<DetailModel> Function(MovieModel movie)? onRequestDetail,
     Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
     onDirectLinkRequested,
@@ -362,7 +360,6 @@ class MerlMovieClient {
                 embed: embed,
                 similar: similar,
                 callback: callback,
-                adConfig: adConfig,
                 plugins: filtered_plugins,
                 onRequestDetail: onRequestDetail,
                 onDirectLinkRequested: onDirectLinkRequested,
@@ -373,7 +370,9 @@ class MerlMovieClient {
           },
         );
         if (pushReplacement) {
-          return await Navigator.of(NavigatorKey.currentContext!).pushReplacement(route);
+          return await Navigator.of(
+            NavigatorKey.currentContext!,
+          ).pushReplacement(route);
         } else {
           return await Navigator.of(NavigatorKey.currentContext!).push(route);
         }
@@ -385,7 +384,6 @@ class MerlMovieClient {
               child: MerlMovieClientPlayer(
                 embed: embed,
                 similar: similar,
-                adConfig: adConfig,
                 callback: callback,
                 seasons: embed.detail.seasons,
                 plugins: filtered_plugins,

@@ -46,9 +46,9 @@ class MerlMovieClientPlayer extends StatefulWidget {
   final List<Season> seasons;
   final List<MovieModel> similar;
   final String? selectPluginSheetLabel;
-  final AutoAdmobConfig? adConfig;
   final Future<DetailModel> Function(MovieModel movie)? onRequestDetail;
-  final Future<DirectLink> Function(DirectLink link, EmbedModel embed)? onDirectLinkRequested;
+  final Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
+  onDirectLinkRequested;
   const MerlMovieClientPlayer({
     super.key,
     required this.embed,
@@ -59,7 +59,6 @@ class MerlMovieClientPlayer extends StatefulWidget {
     this.similar = const [],
     this.selectPluginSheetLabel,
     this.initialPosition = Duration.zero,
-    this.adConfig,
     this.onRequestDetail,
     this.onDirectLinkRequested,
   });
@@ -107,7 +106,7 @@ class MerlMovieClientPlayer extends StatefulWidget {
 
 class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     with TickerProviderStateMixin {
-  AutoAdmob? autoAdmob;
+  Function? backupAdCallback;
 
   late EmbedModel embed;
   List<Season> seasons_arr = [];
@@ -178,7 +177,6 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
               embed: embed,
               similar: similar_arr,
               plugins: widget.plugins,
-              adConfig: widget.adConfig,
               callback: widget.callback,
               onRequestDetail: widget.onRequestDetail,
               onDirectLinkRequested: widget.onDirectLinkRequested,
@@ -327,19 +325,14 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   void createAutoAd() {
-    if (widget.adConfig != null && autoAdmob == null) {
-      autoAdmob = AutoAdmob();
-      autoAdmob?.initialize(config: widget.adConfig);
-      autoAdmob?.onInterstitialAdReady = onAdReady;
-    }
-  }
-
-  void onAdReady() async {
-    log("[${runtimeType.toString()}] Ad is ready!");
-    bool isPlaying = controller?.value.isPlaying == true;
-    await controller?.pause();
-    await autoAdmob?.showInterstitialAd();
-    if (isPlaying) controller?.play();
+    backupAdCallback = FlutterAutoAdmob.ads.interstitial.onLoadedCallback;
+    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
+      controller?.play();
+    };
+    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
+      controller?.pause();
+      FlutterAutoAdmob.ads.interstitial.show();
+    };
   }
 
   void playerListener() {
@@ -661,10 +654,17 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         widget.onDisposedDeviceOrientations,
       );
       WakelockPlus.disable();
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (NavigatorKey.currentContext != null) {
+          Provider.of<PlayerStateProvider>(
+            NavigatorKey.currentContext!,
+            listen: false,
+          ).setValue(false);
+        }
+      });
     }
+    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = backupAdCallback;
     MerlMovieClient.closeWSSConnection();
-    autoAdmob?.destroy();
-    autoAdmob = null;
     _animationController?.dispose();
     hideControls.removeListener(hideControlsListener);
     if (controller != null) {
@@ -675,16 +675,6 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
     controller?.dispose();
     controller = null;
-    if (restoreSystemChrome) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (NavigatorKey.currentContext != null) {
-          Provider.of<PlayerStateProvider>(
-            NavigatorKey.currentContext!,
-            listen: false,
-          ).setValue(false);
-        }
-      });
-    }
     super.dispose();
   }
 
