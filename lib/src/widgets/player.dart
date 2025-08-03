@@ -326,7 +326,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
 
   void createAutoAd() {
     backupAdCallback = FlutterAutoAdmob.ads.interstitial.onLoadedCallback;
-    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
+    FlutterAutoAdmob.ads.interstitial.onClosedCallback = () {
       controller?.play();
     };
     FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
