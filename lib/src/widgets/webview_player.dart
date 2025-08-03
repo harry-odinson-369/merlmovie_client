@@ -50,7 +50,6 @@ class MerlMovieClientWebViewPlayer extends StatefulWidget {
 
 class _MerlMovieClientWebViewPlayerState
     extends State<MerlMovieClientWebViewPlayer> {
-  Function? backupAdCallback;
 
   double webProgress = 0;
 
@@ -162,7 +161,6 @@ class _MerlMovieClientWebViewPlayerState
   }
 
   void createAutoAd() {
-    backupAdCallback = FlutterAutoAdmob.ads.interstitial.onLoadedCallback;
     FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
       FlutterAutoAdmob.ads.interstitial.show();
     };
@@ -438,7 +436,7 @@ class _MerlMovieClientWebViewPlayerState
         }
       });
     }
-    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = backupAdCallback;
+    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = null;
     webViewFlutterController?.setNavigationDelegate(NavigationDelegate());
     webViewFlutterController?.loadRequest(Uri.parse("about:blank"));
     webViewFlutterController = null;

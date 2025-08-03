@@ -106,7 +106,6 @@ class MerlMovieClientPlayer extends StatefulWidget {
 
 class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     with TickerProviderStateMixin {
-  Function? backupAdCallback;
 
   late EmbedModel embed;
   List<Season> seasons_arr = [];
@@ -325,7 +324,6 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   void createAutoAd() {
-    backupAdCallback = FlutterAutoAdmob.ads.interstitial.onLoadedCallback;
     FlutterAutoAdmob.ads.interstitial.onClosedCallback = () {
       controller?.play();
     };
@@ -663,7 +661,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         }
       });
     }
-    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = backupAdCallback;
+    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = null;
     MerlMovieClient.closeWSSConnection();
     _animationController?.dispose();
     hideControls.removeListener(hideControlsListener);
