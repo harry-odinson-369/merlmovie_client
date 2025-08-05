@@ -13,10 +13,12 @@ class MerlMovieClientWebViewWidget extends StatefulWidget {
   const MerlMovieClientWebViewWidget({super.key, required this.link});
 
   @override
-  State<MerlMovieClientWebViewWidget> createState() => _MerlMovieClientWebViewWidgetState();
+  State<MerlMovieClientWebViewWidget> createState() =>
+      _MerlMovieClientWebViewWidgetState();
 }
 
-class _MerlMovieClientWebViewWidgetState extends State<MerlMovieClientWebViewWidget> {
+class _MerlMovieClientWebViewWidgetState
+    extends State<MerlMovieClientWebViewWidget> {
   WebViewController? controller;
 
   int progress = 0;

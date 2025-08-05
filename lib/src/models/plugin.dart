@@ -9,15 +9,13 @@ import 'package:merlmovie_client/src/helpers/map.dart';
 
 enum PluginSource { file, server, create }
 
-enum StreamType { webview, iframe, api }
+enum StreamType { webview, api }
 
 enum PluginVisibility { all, ios, android, none, development }
 
 enum MediaType { multi, tv, movie }
 
 enum PluginOpenType { player, webview }
-
-enum WebViewProviderType { webview_flutter, flutter_inappwebview }
 
 class PluginModel {
   PluginOpenType openType = PluginOpenType.player;
@@ -39,19 +37,15 @@ class PluginModel {
   String version = "1.0.0";
   List<String> query = [];
   PluginSource installedSource = PluginSource.server;
-  WebViewProviderType webView = WebViewProviderType.webview_flutter;
 
   ///[allowedDomains] is only work when [webView] set to [WebViewProviderType.webview_flutter]
   List<String> allowedDomains = [];
 
   bool get underDevelopment => visible == PluginVisibility.development;
 
-  bool get useWebView =>
-      streamType == StreamType.iframe || streamType == StreamType.webview;
+  bool get useWebView => streamType == StreamType.webview;
 
   bool get useInternalPlayer => streamType == StreamType.api;
-
-  bool get useIframe => streamType == StreamType.iframe;
 
   ///This property is indicate this plugin can show up on plugins page to be installable.
   bool get isCanVisible {
@@ -67,7 +61,6 @@ class PluginModel {
     this.openType = PluginOpenType.player,
     this.streamType = StreamType.api,
     this.mediaType = MediaType.multi,
-    this.webView = WebViewProviderType.webview_flutter,
     this.visible = PluginVisibility.all,
     this.installedSource = PluginSource.server,
     this.embedUrl = "",
@@ -151,10 +144,6 @@ class PluginModel {
         map["stream_type"],
         StreamType.api,
       ),
-      webView: WebViewProviderType.values.findEnum(
-        map["webview_type"],
-        WebViewProviderType.webview_flutter,
-      ),
       mediaType: MediaType.values.findEnum(map["media_type"], MediaType.multi),
     );
   }
@@ -195,7 +184,6 @@ class PluginModel {
     "allowed_domains": allowedDomains,
     "query": query,
     "installed_source": installedSource.name,
-    "webview_type": webView.name,
   };
 
   bool _compare_arr(List a, List b) {
