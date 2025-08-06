@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:merlmovie_client/src/cast_receiver/apis/client.dart';
 import 'package:merlmovie_client/src/helpers/assets.dart';
 import 'package:merlmovie_client/src/widgets/bounce.dart';
 import 'package:merlmovie_client/src/widgets/player_play_pause.dart';
@@ -20,15 +21,23 @@ class PlayerMiddleControls extends StatelessWidget {
   });
 
   Future forward15Second() async {
-    goPosition(
-      (currentPosition) => currentPosition + const Duration(seconds: 15),
-    );
+    if (CastClientController.instance.isConnected.value) {
+      CastClientController.instance.forward();
+    } else {
+      goPosition(
+        (currentPosition) => currentPosition + const Duration(seconds: 15),
+      );
+    }
   }
 
   Future rewind15Second() async {
-    goPosition(
-      (currentPosition) => currentPosition - const Duration(seconds: 15),
-    );
+    if (CastClientController.instance.isConnected.value) {
+      CastClientController.instance.rewind();
+    } else {
+      goPosition(
+        (currentPosition) => currentPosition - const Duration(seconds: 15),
+      );
+    }
   }
 
   Future goPosition(Duration Function(Duration currentPosition) builder) async {

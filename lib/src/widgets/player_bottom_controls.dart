@@ -1,18 +1,15 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:merlmovie_client/merlmovie_client.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
-import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/helpers/duration.dart';
-import 'package:merlmovie_client/src/models/direct_link.dart';
-import 'package:merlmovie_client/src/models/movie.dart';
 import 'package:merlmovie_client/src/widgets/player_bottom_controls_button.dart';
 import 'package:merlmovie_client/src/widgets/player_playback_speed.dart';
 import 'package:merlmovie_client/src/widgets/player_select_episode.dart';
 import 'package:merlmovie_client/src/widgets/player_select_quality.dart';
 import 'package:merlmovie_client/src/widgets/player_select_similar_sheet.dart';
 import 'package:merlmovie_client/src/widgets/player_select_subtitle.dart';
-import 'package:merlmovie_client/src/widgets/player_video_builder.dart';
 import 'package:video_player/video_player.dart';
 
 class PlayerBottomControls extends StatelessWidget {
@@ -35,6 +32,7 @@ class PlayerBottomControls extends StatelessWidget {
   final void Function(MovieModel movie)? onSimilarChanged;
   final void Function()? preventHideControls;
   final void Function()? onEditSubtitleThemeClicked;
+  final void Function(bool? connected)? onBroadcastClicked;
   const PlayerBottomControls({
     super.key,
     this.controller,
@@ -56,13 +54,14 @@ class PlayerBottomControls extends StatelessWidget {
     this.onSimilarChanged,
     this.preventHideControls,
     this.onEditSubtitleThemeClicked,
+    this.onBroadcastClicked,
   });
 
   void changeView(VideoViewBuilderType current) {
     preventHideControls?.call();
     if (current == VideoViewBuilderType.original) {
-      onViewTypeChanged?.call(VideoViewBuilderType.cropToFit);
-    } else if (current == VideoViewBuilderType.cropToFit) {
+      onViewTypeChanged?.call(VideoViewBuilderType.crop);
+    } else if (current == VideoViewBuilderType.crop) {
       onViewTypeChanged?.call(VideoViewBuilderType.stretch);
     } else {
       onViewTypeChanged?.call(VideoViewBuilderType.original);
@@ -219,13 +218,13 @@ class PlayerBottomControls extends StatelessWidget {
               icon:
                   viewType == VideoViewBuilderType.original
                       ? Icons.crop_5_4
-                      : viewType == VideoViewBuilderType.cropToFit
+                      : viewType == VideoViewBuilderType.crop
                       ? Icons.crop_free
                       : Icons.zoom_out_map_rounded,
               label:
                   viewType == VideoViewBuilderType.original
                       ? "Original"
-                      : viewType == VideoViewBuilderType.cropToFit
+                      : viewType == VideoViewBuilderType.crop
                       ? "Crop to Fit"
                       : "Stretch",
             );
@@ -235,6 +234,19 @@ class PlayerBottomControls extends StatelessWidget {
         onTap: () => changePlaybackSpeed(context, currentPlaybackSpeed),
         icon: Icons.speed_rounded,
         label: "Playback Speed",
+      ),
+      ValueListenableBuilder(
+        valueListenable: CastClientController.instance.isConnected,
+        builder: (context, connected, child) {
+          return PlayerBottomControlsButton(
+            onTap: () async {
+              bool? connect = await CastClientController.instance.toggleConnect();
+              onBroadcastClicked?.call(connect);
+            },
+            icon: connected ? Icons.cast_connected : Icons.cast,
+            label: "Broadcast",
+          );
+        },
       ),
       if (onEditSubtitleThemeClicked != null)
         PlayerBottomControlsButton(
@@ -269,7 +281,11 @@ class PlayerBottomControls extends StatelessWidget {
           bufferedBarColor: Colors.grey.shade400,
           onSeek: (pos) {
             preventHideControls?.call();
-            controller?.seekTo(pos);
+            if (CastClientController.instance.isConnected.value) {
+              CastClientController.instance.seek(pos);
+            } else {
+              controller?.seekTo(pos);
+            }
           },
         ),
       );

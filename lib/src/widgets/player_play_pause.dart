@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:merlmovie_client/merlmovie_client.dart';
 import 'package:video_player/video_player.dart';
 
 bool _isPaused = false;
@@ -24,13 +25,22 @@ class PlayerPlayPause extends StatefulWidget {
 
 class _PlayerPlayPauseState extends State<PlayerPlayPause> {
   void playPause() {
+    bool isConnected = CastClientController.instance.isConnected.value;
     if (widget.controller != null) {
       if (widget.controller!.value.isPlaying) {
-        widget.controller?.pause();
+        if (isConnected) {
+          CastClientController.instance.pause();
+        } else {
+          widget.controller?.pause();
+        }
         _isPaused = true;
         widget.animationController?.animateTo(0.0);
       } else {
-        widget.controller?.play();
+        if (isConnected) {
+          CastClientController.instance.play();
+        } else {
+          widget.controller?.play();
+        }
         _isPaused = false;
         widget.animationController?.animateTo(1.0);
       }

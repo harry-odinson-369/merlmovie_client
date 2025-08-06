@@ -43,6 +43,10 @@ dependencies:
     git:
       url: https://github.com/harry-odinson-369/flutter_auto_admob.git
       ref: main
+  wifi_address_helper:
+    git:
+      url: https://github.com/harry-odinson-369/wifi_address_helper.git
+      ref: main
 
 dev_dependencies:
   flutter_test:

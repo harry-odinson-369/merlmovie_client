@@ -17,4 +17,14 @@ class ColorUtilities {
       '${color.green.toRadixString(16).padLeft(2, '0')}'
       '${color.blue.toRadixString(16).padLeft(2, '0')}'
       '${color.alpha.toRadixString(16).padLeft(2, '0')}';
+
+  static String resolveHex(String hex) {
+    if (hex.length == 9 && hex.endsWith("ff")) {
+      return hex.substring(0, hex.length - 2);
+    } else if (hex.length == 8 && hex.endsWith("ff")) {
+      return hex.substring(0, hex.length - 2);
+    } else {
+      return hex;
+    }
+  }
 }

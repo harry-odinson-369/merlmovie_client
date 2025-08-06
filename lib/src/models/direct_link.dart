@@ -209,7 +209,7 @@ class SubtitleItem {
         ) ??
         SubtitleRootType.normal,
     headers: MapUtilities.convert<String, String>(map["headers"]),
-    children: map["children"] ?? [],
+    children: List<Map<String, dynamic>>.from(map["children"] ?? []),
   );
 
   Map<String, dynamic> toMap() => {

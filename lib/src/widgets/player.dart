@@ -7,6 +7,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_auto_admob/flutter_auto_admob.dart';
+import 'package:merlmovie_client/src/cast_receiver/apis/client.dart';
+import 'package:merlmovie_client/src/cast_receiver/models/loading.dart';
+import 'package:merlmovie_client/src/cast_receiver/models/subtitle.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
@@ -21,7 +24,9 @@ import 'package:merlmovie_client/src/models/callback.dart';
 import 'package:merlmovie_client/src/models/plugin.dart';
 import 'package:merlmovie_client/src/models/subtitle.dart';
 import 'package:merlmovie_client/src/providers/player_state.dart';
+import 'package:merlmovie_client/src/widgets/await_dialog.dart';
 import 'package:merlmovie_client/src/widgets/player_bottom_controls.dart';
+import 'package:merlmovie_client/src/widgets/player_cast_holder.dart';
 import 'package:merlmovie_client/src/widgets/player_display_caption.dart';
 import 'package:merlmovie_client/src/widgets/player_loading.dart';
 import 'package:merlmovie_client/src/widgets/player_middle_controls.dart';
@@ -36,6 +41,7 @@ import 'package:provider/provider.dart';
 import 'package:subtitle/subtitle.dart';
 import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:wifi_address_helper/wifi_address_helper.dart';
 
 class MerlMovieClientPlayer extends StatefulWidget {
   final EmbedModel embed;
@@ -106,7 +112,6 @@ class MerlMovieClientPlayer extends StatefulWidget {
 
 class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     with TickerProviderStateMixin {
-
   late EmbedModel embed;
   List<Season> seasons_arr = [];
   List<MovieModel> similar_arr = [];
@@ -138,7 +143,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   QualityItem? currentQuality;
 
   ValueNotifier<VideoViewBuilderType> videoViewType = ValueNotifier(
-    VideoViewBuilderType.cropToFit,
+    VideoViewBuilderType.crop,
   );
 
   Timer? _hideControlsTimer;
@@ -221,6 +226,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
           directLink = await widget.onDirectLinkRequested!(directLink!, embed);
           update();
         }
+
         return await try_load_quality(
           directLink!.qualities,
           showErrorOnLoadLink,
@@ -251,11 +257,37 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     return false;
   }
 
+  void _castListener() {
+    var value = CastClientController.instance.status.value;
+    controller?.value = VideoPlayerValue(
+      duration: Duration(seconds: value.duration),
+      size: Size(value.size.width, value.size.height),
+      buffered:
+          value.buffered.map((e) {
+            return DurationRange(
+              Duration(seconds: e.start),
+              Duration(seconds: e.end),
+            );
+          }).toList(),
+      isBuffering: value.isBuffering,
+      isCompleted: value.isCompleted,
+      isInitialized: value.isInitialized,
+      position: Duration(seconds: value.position),
+      errorDescription: value.errorDescription,
+      isLooping: value.isLooping,
+      isPlaying: value.isPlaying,
+      volume: value.volume,
+      playbackSpeed: value.playbackSpeed,
+    );
+    position = Duration(seconds: value.position);
+  }
+
   Future<bool> changeQuality(
     QualityItem quality, [
     bool showError = false,
+    bool force = false,
   ]) async {
-    if (currentQuality?.link != quality.link) {
+    if (currentQuality?.link != quality.link || force) {
       try {
         isInitializing.value = true;
         await controller?.dispose();
@@ -264,16 +296,25 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         controller = await create_video_controller(quality);
         update();
         hideControls.value = false;
-        await controller?.initialize();
-        controller?.addListener(playerListener);
-        await controller?.seekTo(position);
-        controller?.play().then((value) {
-          hideControls.value = true;
+        if (CastClientController.instance.isConnected.value) {
+          CastClientController.instance.status.addListener(_castListener);
+          bool isLoaded = await CastClientController.instance.start(quality);
+          CastClientController.instance.seek(position);
           isInitializing.value = false;
+          hideControls.value = true;
           createAutoAd();
-        });
-        update();
-        return true;
+          return isLoaded;
+        } else {
+          await controller?.initialize();
+          controller?.addListener(playerListener);
+          await controller?.seekTo(position);
+          controller?.play().then((value) {
+            hideControls.value = true;
+            isInitializing.value = false;
+            createAutoAd();
+          });
+          return true;
+        }
       } catch (err) {
         log(err.toString());
         log(
@@ -292,6 +333,13 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
 
   Future force_start_proxy() async {
     while (true) {
+      if (!mounted) break;
+      if (CastClientController.instance.isConnected.value) {
+        String? address = await WifiAddressHelper.getAddress;
+        if (address != null) MerlMovieHttpProxyService.hostname = address;
+      } else {
+        MerlMovieHttpProxyService.hostname = "127.0.0.1";
+      }
       if (!await MerlMovieHttpProxyService.isServing) {
         await MerlMovieHttpProxyService.background_serve();
         await Future.delayed(const Duration(seconds: 1));
@@ -348,6 +396,11 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   void onRequestProgress(double progress) {
+    if (CastClientController.instance.isConnected.value) {
+      CastClientController.instance.loading(
+        LoadingModel(progress: progress, embed: embed),
+      );
+    }
     this.progress = progress;
     update();
   }
@@ -434,11 +487,18 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
 
   void onViewTypeChanged(VideoViewBuilderType type) {
     videoViewType.value = type;
+    if (CastClientController.instance.isConnected.value) {
+      CastClientController.instance.videoMode(type);
+    }
   }
 
   void onPlaybackSpeedChanged(double speed) {
     playbackSpeed = speed;
-    controller?.setPlaybackSpeed(speed);
+    if (CastClientController.instance.isConnected.value) {
+      CastClientController.instance.speed(speed);
+    } else {
+      controller?.setPlaybackSpeed(speed);
+    }
     update();
   }
 
@@ -483,11 +543,30 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     });
   }
 
+  void onBroadcastClicked(bool? connect) async {
+    if (connect != null) {
+      update();
+      Duration pos = Duration(seconds: position.inSeconds);
+      if (currentQuality != null) {
+        await changeQuality(currentQuality!, true, true);
+        if (CastClientController.instance.isConnected.value) {
+          CastClientController.instance.seek(pos);
+          CastClientController.instance.subtitle(
+            subtitles.value.map((e) => CastSubtitle.parse(e)).toList(),
+          );
+        }
+      }
+    }
+  }
+
   Future onSubtitleChanged(SubtitleItem? subtitle) async {
     if (subtitle?.link == "off") {
       subtitles.value = [];
       this.subtitle = subtitle;
       update();
+      if (CastClientController.instance.isConnected.value) {
+        CastClientController.instance.subtitle([]);
+      }
     } else if (subtitle != null) {
       this.subtitle = subtitle;
       update();
@@ -503,83 +582,86 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                   : SubtitleFetchExtension.text,
         );
       }, subtitle);
+      if (CastClientController.instance.isConnected.value) {
+        CastClientController.instance.subtitle(
+          arr.map((e) => CastSubtitle.parse(e)).toList(),
+        );
+      }
       subtitles.value = arr;
     }
+  }
+
+  void updateNewDetail(DetailModel detail, MovieModel movie) async {
+    embed.detail = detail;
+    embed.type = detail.type;
+    embed.tmdbId = detail.id.toString();
+    embed.title = detail.real_title;
+    embed.imdbId = detail.externalIds.imdbId;
+    seasons_arr = detail.seasons;
+    directLink = null;
+    progress = 0;
+    currentSimilar = movie;
+    isInitializing.value = true;
+    subtitles.value = [];
+    subtitle = null;
+    currentQuality = null;
+    similar_arr = [
+      ...detail.recommendations.results,
+      ...detail.similar.results,
+    ];
+    update();
+    await MerlMovieClient.closeWSSConnection();
+    await controller?.dispose();
+    controller = null;
+    position = Duration.zero;
+    update();
   }
 
   Future onSimilarChanged(MovieModel movie) async {
     assert(TheMovieDbApi.api_keys.isNotEmpty, "The TMDb Api keys must be set.");
     if (widget.onRequestDetail != null) {
-      await force_start_proxy();
-      directLink = null;
-      progress = 0;
-      currentSimilar = movie;
-      isInitializing.value = true;
-      subtitles.value = [];
-      subtitle = null;
-      currentQuality = null;
-      embed.thumbnail = TheMovieDbApi.getImage(
-        movie.backdropPath,
-        TMDBImageSize.original,
-      );
-      embed.title_logo = TheMovieDbApi.getTitleLogo(
-        movie.type,
-        movie.id.toString(),
-        TMDBImageSize.w300,
-      );
-      update();
-      await MerlMovieClient.closeWSSConnection();
-      await controller?.dispose();
-      controller = null;
-      position = Duration.zero;
-      update();
-      bool isLastSimilar = similar_arr.last.unique == movie.unique;
-      final detail = await widget.onRequestDetail!(movie);
-      embed.detail = detail;
-      embed.type = detail.type;
-      embed.tmdbId = movie.id.toString();
-      embed.title = movie.real_title;
-      embed.imdbId = detail.externalIds.imdbId;
-      seasons_arr = detail.seasons;
-      if (isLastSimilar) {
-        similar_arr = [
-          ...detail.recommendations.results,
-          ...detail.similar.results,
-        ];
-      }
-      update();
-      if (detail.type == "tv" && detail.seasons.isNotEmpty) {
-        Episode? episode = await showModalBottomSheet(
-          context: NavigatorKey.currentContext!,
-          isScrollControlled: true,
-          builder: (context) {
-            return PlayerSelectEpisodeSheet(
-              seasons: detail.seasons,
-              currentEpisode: null,
+      Future<DetailModel> future() => widget.onRequestDetail!(movie);
+      var detail = await showAwaitingDialog<DetailModel>(future);
+      if (detail != null) {
+        if (detail.type == "tv" && detail.seasons.isNotEmpty) {
+          Episode? episode = await showModalBottomSheet(
+            context: NavigatorKey.currentContext!,
+            isScrollControlled: true,
+            builder: (context) {
+              return PlayerSelectEpisodeSheet(
+                seasons: detail.seasons,
+                currentEpisode: null,
+              );
+            },
+          );
+          if (episode != null) {
+            embed.season = episode.seasonNumber.toString();
+            embed.episode = episode.episodeNumber.toString();
+            embed.thumbnail = TheMovieDbApi.getImage(
+              episode.stillPath,
+              TMDBImageSize.original,
             );
-          },
-        );
-        if (episode != null) {
-          embed.season = episode.seasonNumber.toString();
-          embed.episode = episode.episodeNumber.toString();
-          embed.thumbnail = TheMovieDbApi.getImage(
-            episode.stillPath,
-            TMDBImageSize.original,
-          );
+            embed.title_logo = TheMovieDbApi.getImage(
+              detail.real_title_logo,
+              TMDBImageSize.w300,
+            );
+            updateNewDetail(detail, movie);
+            initialize();
+          }
         } else {
-          embed.season =
-              detail.seasons.first.episodes.first.seasonNumber.toString();
-          embed.episode =
-              detail.seasons.first.episodes.first.episodeNumber.toString();
           embed.thumbnail = TheMovieDbApi.getImage(
-            detail.seasons.first.episodes.first.stillPath,
+            detail.backdropPath,
             TMDBImageSize.original,
           );
+          embed.title_logo = TheMovieDbApi.getImage(
+            detail.real_title_logo,
+            TMDBImageSize.w300,
+          );
+          updateNewDetail(detail, movie);
+          initialize();
         }
       }
     }
-    update();
-    initialize();
   }
 
   void showHideControls() {
@@ -673,6 +755,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
     controller?.dispose();
     controller = null;
+    CastClientController.instance.idle();
     super.dispose();
   }
 
@@ -699,16 +782,27 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              SizedBox(
+              Container(
                 height: context.screen.height,
                 width: context.screen.width,
+                color: Colors.black,
               ),
-              if (controller != null)
-                PlayerVideoBuilder(
-                  controller: controller,
-                  viewType: videoViewType,
-                ),
-              if (controller != null && !isEditingSubtitleTheme)
+              ValueListenableBuilder(
+                valueListenable: CastClientController.instance.isConnected,
+                builder: (context, connected, child) {
+                  if (controller != null && !connected) {
+                    return PlayerVideoBuilder(
+                      controller: controller,
+                      viewType: videoViewType,
+                    );
+                  } else {
+                    return PlayerCastHolder(embed: embed);
+                  }
+                },
+              ),
+              if (controller != null &&
+                  !isEditingSubtitleTheme &&
+                  !CastClientController.instance.isConnected.value)
                 ValueListenableBuilder(
                   valueListenable: subtitleTheme,
                   builder: (context, currentSubtitleTheme, _) {
@@ -739,11 +833,16 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                     builder: (context, currentSubtitleTheme, _) {
                       return PlayerSubtitleThemeEditor(
                         current: currentSubtitleTheme,
-                        onClose:
-                            () =>
-                                setState(() => isEditingSubtitleTheme = false),
+                        onClose: () {
+                          setState(() {
+                            isEditingSubtitleTheme = false;
+                          });
+                        },
                         onChanged: (theme) {
                           subtitleTheme.value = theme;
+                          if (CastClientController.instance.isConnected.value) {
+                            CastClientController.instance.subtitleTheme(theme);
+                          }
                           SubtitleTheme.setTheme(theme);
                         },
                       );
@@ -759,73 +858,71 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                   child: ValueListenableBuilder(
                     valueListenable: hideControls,
                     builder: (context, isHiding, _) {
+                      var controls = Container(
+                        key: UniqueKey(),
+                        color: Colors.black.withOpacity(
+                          CastClientController.instance.isConnected.value
+                              ? 1
+                              : .7,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            PlayerTopControls(
+                              embed: embed,
+                              controller: controller,
+                              onTrailingClicked:
+                                  widget.plugins.isNotEmpty
+                                      ? onTrailingClicked
+                                      : null,
+                              trailing:
+                                  widget.plugins.isNotEmpty
+                                      ? Icon(
+                                        Icons.format_list_bulleted,
+                                        color: Colors.white,
+                                      )
+                                      : null,
+                              preventHideControls: preventHideControls,
+                            ),
+                            Center(
+                              child: PlayerMiddleControls(
+                                controller: controller,
+                                isInitializing: isInitializing,
+                                animationController: _animationController,
+                                preventHideControls: preventHideControls,
+                              ),
+                            ),
+                            PlayerBottomControls(
+                              controller: controller,
+                              currentViewType: videoViewType,
+                              currentPlaybackSpeed: playbackSpeed,
+                              currentQuality: currentQuality,
+                              currentEpisode: seasons_arr.findCurrentEpisode(
+                                embed,
+                              ),
+                              qualities: directLink?.qualities ?? [],
+                              seasons: seasons_arr,
+                              similar: similar_arr,
+                              currentSubtitle: subtitle,
+                              currentSimilar: currentSimilar,
+                              subtitles: directLink?.subtitles ?? [],
+                              onViewTypeChanged: onViewTypeChanged,
+                              onQualityChanged: onQualityChanged,
+                              onEpisodeChanged: onEpisodeChanged,
+                              onSubtitleChanged: onSubtitleChanged,
+                              preventHideControls: preventHideControls,
+                              onSimilarChanged: onSimilarChanged,
+                              onPlaybackSpeedChanged: onPlaybackSpeedChanged,
+                              onEditSubtitleThemeClicked:
+                                  onEditSubtitleThemeClicked,
+                              onBroadcastClicked: onBroadcastClicked,
+                            ),
+                          ],
+                        ),
+                      );
                       return AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
-                        child:
-                            isHiding
-                                ? SizedBox(key: UniqueKey())
-                                : Container(
-                                  key: UniqueKey(),
-                                  color: Colors.black.withOpacity(.7),
-                                  child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      PlayerTopControls(
-                                        embed: embed,
-                                        controller: controller,
-                                        onTrailingClicked:
-                                            widget.plugins.isNotEmpty
-                                                ? onTrailingClicked
-                                                : null,
-                                        trailing:
-                                            widget.plugins.isNotEmpty
-                                                ? Icon(
-                                                  Icons.format_list_bulleted,
-                                                  color: Colors.white,
-                                                )
-                                                : null,
-                                        preventHideControls:
-                                            preventHideControls,
-                                      ),
-                                      Center(
-                                        child: PlayerMiddleControls(
-                                          controller: controller,
-                                          isInitializing: isInitializing,
-                                          animationController:
-                                              _animationController,
-                                          preventHideControls:
-                                              preventHideControls,
-                                        ),
-                                      ),
-                                      PlayerBottomControls(
-                                        controller: controller,
-                                        currentViewType: videoViewType,
-                                        currentPlaybackSpeed: playbackSpeed,
-                                        currentQuality: currentQuality,
-                                        currentEpisode: seasons_arr
-                                            .findCurrentEpisode(embed),
-                                        qualities: directLink?.qualities ?? [],
-                                        seasons: seasons_arr,
-                                        similar: similar_arr,
-                                        currentSubtitle: subtitle,
-                                        currentSimilar: currentSimilar,
-                                        subtitles: directLink?.subtitles ?? [],
-                                        onViewTypeChanged: onViewTypeChanged,
-                                        onQualityChanged: onQualityChanged,
-                                        onEpisodeChanged: onEpisodeChanged,
-                                        onSubtitleChanged: onSubtitleChanged,
-                                        preventHideControls:
-                                            preventHideControls,
-                                        onSimilarChanged: onSimilarChanged,
-                                        onPlaybackSpeedChanged:
-                                            onPlaybackSpeedChanged,
-                                        onEditSubtitleThemeClicked:
-                                            onEditSubtitleThemeClicked,
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                        child: isHiding ? SizedBox(key: UniqueKey()) : controls,
                       );
                     },
                   ),

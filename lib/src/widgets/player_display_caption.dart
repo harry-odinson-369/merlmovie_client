@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:merlmovie_client/src/cast_receiver/apis/client.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/models/subtitle.dart';
@@ -90,6 +91,10 @@ class PlayerDisplayCaption extends StatelessWidget {
       child: ValueListenableBuilder(
         valueListenable: controller!,
         builder: (context, value, child) {
+          if (CastClientController.instance.isConnected.value) {
+            return SizedBox();
+          }
+
           final caption = subtitles.firstWhereOrNull(
             (e) => value.position >= e.start && value.position <= e.end,
           );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:video_player/video_player.dart';
 
-enum VideoViewBuilderType { cropToFit, stretch, original }
+enum VideoViewBuilderType { crop, stretch, original }
 
 class PlayerVideoBuilder extends StatelessWidget {
   final VideoPlayerController? controller;
@@ -41,7 +41,7 @@ class PlayerVideoBuilder extends StatelessWidget {
                 aspectRatio: value.aspectRatio,
                 child: videoView(),
               );
-            } else if (viewBuilderType == VideoViewBuilderType.cropToFit) {
+            } else if (viewBuilderType == VideoViewBuilderType.crop) {
               return SizedBox.expand(
                 child: FittedBox(
                   fit: BoxFit.cover,

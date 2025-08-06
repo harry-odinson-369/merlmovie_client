@@ -3,6 +3,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:merlmovie_client/src/cast_receiver/apis/client.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/models/embed.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -89,6 +90,24 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
 
     double prog = widget.progress / 100;
 
+    Widget textTitle = Text(
+      widget.embed.title,
+      textAlign: TextAlign.center,
+      style: context.theme.textTheme.titleLarge?.copyWith(
+        fontSize: context.screen.height * .125,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    );
+
+    Widget cachedImage = CachedNetworkImage(
+      imageUrl: widget.embed.title_logo,
+      fit: BoxFit.contain,
+      cacheKey: widget.embed.key,
+      placeholder: (context, url) => textTitle,
+      errorWidget: (context, url, error) => textTitle,
+    );
+
     return Container(
       height: context.screen.height,
       width: context.screen.width,
@@ -98,7 +117,10 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
         children: [
           SizedBox.expand(
             child: CachedNetworkImage(
-              imageUrl: widget.embed.thumbnail,
+              imageUrl:
+                  CastClientController.instance.isConnected.value
+                      ? "___"
+                      : widget.embed.thumbnail,
               errorWidget:
                   (context, url, error) => Container(color: Colors.black),
               placeholder: (context, url) => Container(color: Colors.black),
@@ -127,29 +149,7 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
                         Colors.white,
                         BlendMode.srcATop,
                       ),
-                      child: CachedNetworkImage(
-                        imageUrl: widget.embed.title_logo,
-                        fit: BoxFit.contain,
-                        cacheKey: widget.embed.key,
-                        placeholder:
-                            (context, url) => Text(
-                              "$prog%",
-                              style: context.theme.textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                        errorWidget:
-                            (context, url, error) => Text(
-                              "$prog%",
-                              style: context.theme.textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                      ),
+                      child: cachedImage,
                     ),
                   ),
                   if (prog == 0)
@@ -160,29 +160,7 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
                           () => setState(() {
                             show = !show;
                           }),
-                      child: CachedNetworkImage(
-                        imageUrl: widget.embed.title_logo,
-                        fit: BoxFit.contain,
-                        cacheKey: widget.embed.key,
-                        placeholder:
-                            (context, url) => Text(
-                              "$prog%",
-                              style: context.theme.textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                        errorWidget:
-                            (context, url, error) => Text(
-                              "$prog%",
-                              style: context.theme.textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                      ),
+                      child: cachedImage,
                     ),
                   if (prog > 0)
                     TweenAnimationBuilder(
@@ -202,29 +180,7 @@ class _PlayerOverLoadingState extends State<PlayerOverLoading> {
                             ).createShader(bounds);
                           },
                           blendMode: BlendMode.dstIn,
-                          child: CachedNetworkImage(
-                            imageUrl: widget.embed.title_logo,
-                            fit: BoxFit.contain,
-                            cacheKey: widget.embed.key,
-                            placeholder:
-                                (context, url) => Text(
-                                  "$prog%",
-                                  style: context.theme.textTheme.titleLarge
-                                      ?.copyWith(
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                            errorWidget:
-                                (context, url, error) => Text(
-                                  "$prog%",
-                                  style: context.theme.textTheme.titleLarge
-                                      ?.copyWith(
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                          ),
+                          child: cachedImage,
                         );
                       },
                     ),

@@ -12,12 +12,22 @@ export './src/models/subtitle.dart';
 export './src/models/callback.dart';
 export './src/models/movie.dart';
 
+export './src/cast_receiver/widgets/landing.dart';
+export './src/cast_receiver/apis/client.dart';
+export './src/cast_receiver/apis/server.dart';
+export './src/cast_receiver/models/cast_info.dart';
+export './src/cast_receiver/models/player_value.dart';
+export './src/cast_receiver/models/loading.dart';
+export './src/cast_receiver/models/landing.dart';
+export './src/cast_receiver/models/subtitle.dart';
+
 export './src/widgets/prompt_dialog.dart';
 export './src/widgets/webview.dart';
 export './src/widgets/webview_player.dart';
 export './src/widgets/player.dart';
 export './src/widgets/builder.dart';
 export './src/widgets/player_subtitle_theme_editor.dart';
+export './src/widgets/player_video_builder.dart';
 
 export './src/extensions/uri.dart';
 

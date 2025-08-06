@@ -151,13 +151,7 @@ class PluginModel {
   String get logoBgToHex {
     if (logoBackgroundColor != null) {
       String hex = ColorUtilities.toHex(logoBackgroundColor!);
-      if (hex.length == 9 && hex.endsWith("ff")) {
-        return hex.substring(0, hex.length - 2);
-      } else if (hex.length == 8 && hex.endsWith("ff")) {
-        return hex.substring(0, hex.length - 2);
-      } else {
-        return hex;
-      }
+      return ColorUtilities.resolveHex(hex);
     } else {
       return "";
     }
