@@ -62,7 +62,11 @@ class CastClientController {
     }
   }
 
-  Future<bool?> toggleConnect([String? notice]) async {
+  Future<bool?> toggleConnect({
+    String? notice,
+    List<Widget>? noticeButtons,
+    bool showOnError = false,
+  }) async {
     if (isConnected.value) {
       bool ok = await showPromptDialog(
         title:
@@ -90,12 +94,17 @@ class CastClientController {
                   collapsedMaxLines: 15,
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text("OK", style: context.theme.textTheme.titleMedium),
-                ),
-              ],
+              actions:
+                  noticeButtons ??
+                  [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        "OK",
+                        style: context.theme.textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
             );
           },
         );
@@ -105,6 +114,16 @@ class CastClientController {
       );
       if (ok) {
         await showAwaitingDialog(connect, label: "Connecting...");
+        if (showOnError) {
+          if (_isConnected.value == false) {
+            await showPromptDialog(
+              title: "Error",
+              subtitle:
+                  "We couldn't find Media Receiver on your network! Please make sure your phone & TV are connected to the same WiFi network.",
+              button: PromptDialogButton.ok,
+            );
+          }
+        }
         return _isConnected.value;
       }
     }
@@ -112,7 +131,9 @@ class CastClientController {
   }
 
   Future disconnect() async {
-    _controller?.sendMessage(ServerAction(action: ActionServer.disconnect).encoded);
+    _controller?.sendMessage(
+      ServerAction(action: ActionServer.disconnect).encoded,
+    );
     await _controller?.close();
     _controller = null;
     _isConnected.value = false;

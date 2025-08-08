@@ -377,7 +377,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   void onAdClosed() {
-    controller?.play();
+    try {
+      controller?.play();
+    } catch (_) {}
     if (CastClientController.instance.isConnected.value) {
       CastClientController.instance.play();
     }
@@ -388,16 +390,28 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       _flutterAutoAdmob = FlutterAutoAdmob();
       _flutterAutoAdmob?.configure(config: MerlMovieClient.adConfig!);
       _flutterAutoAdmob?.interstitial.onClosedCallback = onAdClosed;
+      _flutterAutoAdmob?.interstitial.onShowedCallback = () {
+        try {
+          controller?.pause();
+        } catch (_) {}
+        if (CastClientController.instance.isConnected.value) {
+          CastClientController.instance.pause();
+        }
+      };
       _flutterAutoAdmob?.interstitial.onLoadedCallback = () {
-        controller?.pause();
-        CastClientController.instance.pause();
         _flutterAutoAdmob?.interstitial.show();
       };
     } else {
       FlutterAutoAdmob.ads.interstitial.onClosedCallback = onAdClosed;
+      FlutterAutoAdmob.ads.interstitial.onShowedCallback = () {
+        try {
+          controller?.pause();
+        } catch (_) {}
+        if (CastClientController.instance.isConnected.value) {
+          CastClientController.instance.pause();
+        }
+      };
       FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
-        controller?.pause();
-        CastClientController.instance.pause();
         FlutterAutoAdmob.ads.interstitial.show();
       };
     }

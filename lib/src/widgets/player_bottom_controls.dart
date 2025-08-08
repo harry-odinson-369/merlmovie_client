@@ -240,7 +240,9 @@ class PlayerBottomControls extends StatelessWidget {
         builder: (context, connected, child) {
           return PlayerBottomControlsButton(
             onTap: () async {
-              bool? connect = await CastClientController.instance.toggleConnect();
+              bool? connect = await CastClientController.instance.toggleConnect(
+                showOnError: true,
+              );
               onBroadcastClicked?.call(connect);
             },
             icon: connected ? Icons.cast_connected : Icons.cast,
