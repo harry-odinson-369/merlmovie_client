@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:merlmovie_client/merlmovie_client.dart';
-import 'package:merlmovie_client/src/cast_receiver/apis/server.dart';
 import 'package:merlmovie_client/src/cast_receiver/models/action.dart';
+import 'package:merlmovie_client/src/cast_receiver/apis/server.dart';
+import 'package:merlmovie_client/src/cast_receiver/models/landing.dart';
 import 'package:merlmovie_client/src/cast_receiver/models/loading.dart';
 import 'package:merlmovie_client/src/cast_receiver/models/player_value.dart';
 import 'package:merlmovie_client/src/cast_receiver/models/subtitle.dart';
@@ -160,6 +160,16 @@ class _LandingReceiverState extends State<LandingReceiver> {
       },
       onCreated: (socket) {
         this.socket = socket;
+      },
+      onDone: () {
+        quality = null;
+        loading = null;
+        subtitles.value = [];
+        controller?.dispose();
+        _statusTimer?.cancel();
+        _statusTimer = null;
+        ServerControl.instance.landing.value = LandingModel();
+        update();
       },
     );
     super.initState();

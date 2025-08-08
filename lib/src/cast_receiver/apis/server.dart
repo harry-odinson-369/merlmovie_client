@@ -24,6 +24,7 @@ class ServerControl {
     void Function(ServerAction action, WebSocket socket) handle, {
     void Function(HttpServer server)? onBind,
     void Function(WebSocket socket)? onCreated,
+    void Function()? onDone,
   }) async {
     String? address = await WifiAddressHelper.getAddress;
     if (address == null) throw Exception("The address was null!");
@@ -56,7 +57,7 @@ class ServerControl {
           } else {
             handle(msg, socket);
           }
-        });
+        }, onDone: onDone);
       } else {
         request.response
           ..statusCode = HttpStatus.forbidden
