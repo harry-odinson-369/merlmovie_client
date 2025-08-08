@@ -66,7 +66,11 @@ class PlayerTopControls extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                embed.title.isEmpty ? "Playing Video" : embed.title,
+                embed.title.isEmpty
+                    ? "Playing Video"
+                    : embed.type == "tv"
+                    ? "S${embed.season}E${embed.episode} - ${embed.title}"
+                    : embed.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.theme.textTheme.titleMedium?.copyWith(

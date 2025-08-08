@@ -279,6 +279,9 @@ class PlayerBottomControls extends StatelessWidget {
           progressBarColor: Colors.red,
           baseBarColor: Colors.grey.shade700,
           bufferedBarColor: Colors.grey.shade400,
+          onDragUpdate: (details) {
+            preventHideControls?.call();
+          },
           onSeek: (pos) {
             preventHideControls?.call();
             if (CastClientController.instance.isConnected.value) {

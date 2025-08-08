@@ -116,6 +116,8 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   List<Season> seasons_arr = [];
   List<MovieModel> similar_arr = [];
 
+  FlutterAutoAdmob? _flutterAutoAdmob;
+
   Duration position = Duration.zero;
 
   bool restoreSystemChrome = true;
@@ -280,6 +282,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       playbackSpeed: value.playbackSpeed,
     );
     position = Duration(seconds: value.position);
+    if (value.isCompleted) {
+      update();
+    }
   }
 
   Future<bool> changeQuality(
@@ -371,14 +376,31 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
   }
 
+  void onAdClosed() {
+    controller?.play();
+    if (CastClientController.instance.isConnected.value) {
+      CastClientController.instance.play();
+    }
+  }
+
   void createAutoAd() {
-    FlutterAutoAdmob.ads.interstitial.onClosedCallback = () {
-      controller?.play();
-    };
-    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
-      controller?.pause();
-      FlutterAutoAdmob.ads.interstitial.show();
-    };
+    if (MerlMovieClient.adConfig != null) {
+      _flutterAutoAdmob = FlutterAutoAdmob();
+      _flutterAutoAdmob?.configure(config: MerlMovieClient.adConfig!);
+      _flutterAutoAdmob?.interstitial.onClosedCallback = onAdClosed;
+      _flutterAutoAdmob?.interstitial.onLoadedCallback = () {
+        controller?.pause();
+        CastClientController.instance.pause();
+        _flutterAutoAdmob?.interstitial.show();
+      };
+    } else {
+      FlutterAutoAdmob.ads.interstitial.onClosedCallback = onAdClosed;
+      FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
+        controller?.pause();
+        CastClientController.instance.pause();
+        FlutterAutoAdmob.ads.interstitial.show();
+      };
+    }
   }
 
   void playerListener() {
@@ -391,6 +413,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       position = controller!.value.position;
       if (!controller!.value.isPlaying) {
         hideControls.value = false;
+      }
+      if (controller?.value.isCompleted == true) {
+        update();
       }
     }
   }
@@ -536,6 +561,12 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
   }
 
+  Future onNextEpisodeClicked(Episode? next) async {
+    if (next != null) {
+      onEpisodeChanged(next);
+    }
+  }
+
   void onEditSubtitleThemeClicked() {
     hideControls.value = true;
     setState(() {
@@ -665,7 +696,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   void showHideControls() {
-    if (controller?.value.isPlaying != true || isEditingSubtitleTheme) return;
+    bool prevent =
+        controller?.value.isCompleted == true || isEditingSubtitleTheme;
+    if (prevent) return;
     hideControls.value = !hideControls.value;
     preventHideControls();
   }
@@ -888,8 +921,14 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                               child: PlayerMiddleControls(
                                 controller: controller,
                                 isInitializing: isInitializing,
+                                currentEp: seasons_arr.findCurrentEpisode(
+                                  embed,
+                                ),
+                                seasons: seasons_arr,
+                                mediaType: embed.type,
                                 animationController: _animationController,
                                 preventHideControls: preventHideControls,
+                                onNextEpisodeClicked: onNextEpisodeClicked,
                               ),
                             ),
                             PlayerBottomControls(
@@ -920,6 +959,9 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                           ],
                         ),
                       );
+                      if (controller?.value.isCompleted == true) {
+                        return controls;
+                      }
                       return AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: isHiding ? SizedBox(key: UniqueKey()) : controls,

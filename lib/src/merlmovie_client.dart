@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_auto_admob/flutter_auto_admob.dart';
 import 'package:http/http.dart';
 import 'package:merlmovie_client/src/controllers/socket_controller.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
@@ -30,11 +31,18 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 SocketController? _controller;
+FlutterAutoAdmobConfig? _autoAdmobConfig;
 
 class MerlMovieClient {
   static SocketController? get socket => _controller;
 
   static bool get isPlayerActive => NavigatorKey.isPlayerActive;
+
+  static FlutterAutoAdmobConfig? get adConfig => _autoAdmobConfig;
+
+  static void setAdConfig(FlutterAutoAdmobConfig? config) {
+    _autoAdmobConfig = config;
+  }
 
   static Future closeWSSConnection() async {
     await _controller?.close();
@@ -135,43 +143,47 @@ class MerlMovieClient {
       LoggerHelper.logMsg("Request using websocket. ready to communicate.");
 
       void handler(dynamic event) async {
-        final decoded = json.decode(event.toString());
-        final wss = WSSDataModel.fromMap(decoded);
+        try {
+          final decoded = json.decode(event.toString());
+          final wss = WSSDataModel.fromMap(decoded);
 
-        if (wss.action == WSSAction.fetch && wss.httpInfo.url.isNotEmpty) {
-          if (wss.httpInfo.url.startsWith("http")) {
-            await _wssHttpRequest(_controller, wss);
-          } else if (wss.httpInfo.url.startsWith("db")) {
-            await _wssDbRequest(_controller, wss, embed);
+          if (wss.action == WSSAction.fetch && wss.httpInfo.url.isNotEmpty) {
+            if (wss.httpInfo.url.startsWith("http")) {
+              await _wssHttpRequest(_controller, wss);
+            } else if (wss.httpInfo.url.startsWith("db")) {
+              await _wssDbRequest(_controller, wss, embed);
+            }
+          } else if (wss.action == WSSAction.progress) {
+            onProgress?.call(double.parse("${wss.data["progress"] ?? 0}"));
+          } else if (wss.action == WSSAction.result) {
+            NavigatorKey.currentContext?.read<BrowserProvider>().close();
+            completer.finish(Response(json.encode(wss.data), 200));
+          } else if (wss.action == WSSAction.failed) {
+            completer.finish(
+              Response(json.encode(wss.data), wss.data["status"]),
+            );
+          } else if (wss.action == WSSAction.browser) {
+            NavigatorKey.currentContext?.read<BrowserProvider>().spawn(
+              wss.browserInfo,
+            );
+          } else if (wss.action == WSSAction.browser_close) {
+            NavigatorKey.currentContext?.read<BrowserProvider>().close();
+          } else if (wss.action == WSSAction.browser_cookie) {
+            final cookie = await BrowserWidget.getCookie(wss.data["url"]);
+            final data = WSSDataModel(
+              action: WSSAction.browser_cookie_result,
+              id: wss.id,
+              data: {"cookie": cookie},
+            );
+            socket?.sendMessage(json.encode(data.toMap()));
+          } else if (wss.action == WSSAction.browser_set_cookie) {
+            await BrowserWidget.setCookie(wss.data["url"], wss.data["cookie"]);
+          } else if (wss.action == WSSAction.browser_visible) {
+            NavigatorKey.currentContext?.read<BrowserProvider>().visible(
+              wss.visible,
+            );
           }
-        } else if (wss.action == WSSAction.progress) {
-          onProgress?.call(double.parse("${wss.data["progress"] ?? 0}"));
-        } else if (wss.action == WSSAction.result) {
-          NavigatorKey.currentContext?.read<BrowserProvider>().close();
-          completer.finish(Response(json.encode(wss.data), 200));
-        } else if (wss.action == WSSAction.failed) {
-          completer.finish(Response(json.encode(wss.data), wss.data["status"]));
-        } else if (wss.action == WSSAction.browser) {
-          NavigatorKey.currentContext?.read<BrowserProvider>().spawn(
-            wss.browserInfo,
-          );
-        } else if (wss.action == WSSAction.browser_close) {
-          NavigatorKey.currentContext?.read<BrowserProvider>().close();
-        } else if (wss.action == WSSAction.browser_cookie) {
-          final cookie = await BrowserWidget.getCookie(wss.data["url"]);
-          final data = WSSDataModel(
-            action: WSSAction.browser_cookie_result,
-            id: wss.id,
-            data: {"cookie": cookie},
-          );
-          socket?.sendMessage(json.encode(data.toMap()));
-        } else if (wss.action == WSSAction.browser_set_cookie) {
-          await BrowserWidget.setCookie(wss.data["url"], wss.data["cookie"]);
-        } else if (wss.action == WSSAction.browser_visible) {
-          NavigatorKey.currentContext?.read<BrowserProvider>().visible(
-            wss.visible,
-          );
-        }
+        } catch (_) {}
       }
 
       socket?.message?.listen(handler);

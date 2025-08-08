@@ -65,6 +65,8 @@ class _MerlMovieClientWebViewPlayerState
 
   Timer? _hideBarButtonsTimer;
 
+  FlutterAutoAdmob? _flutterAutoAdmob;
+
   Future createWebViewFlutterController() async {
     if (Platform.isIOS) {
       WebKitWebViewController wk = WebKitWebViewController(
@@ -137,9 +139,17 @@ class _MerlMovieClientWebViewPlayerState
   }
 
   void createAutoAd() {
-    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
-      FlutterAutoAdmob.ads.interstitial.show();
-    };
+    if (MerlMovieClient.adConfig != null) {
+      _flutterAutoAdmob = FlutterAutoAdmob();
+      _flutterAutoAdmob?.configure(config: MerlMovieClient.adConfig!);
+      _flutterAutoAdmob?.interstitial.onLoadedCallback = () {
+        _flutterAutoAdmob?.interstitial.show();
+      };
+    } else {
+      FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
+        FlutterAutoAdmob.ads.interstitial.show();
+      };
+    }
   }
 
   TextStyle? get dialogButtonTextStyle =>
