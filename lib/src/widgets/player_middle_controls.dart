@@ -22,12 +22,12 @@ class PlayerMiddleControls extends StatelessWidget {
     super.key,
     this.controller,
     this.preventHideControls,
-    required this.isInitializing,
     this.animationController,
     this.currentEp,
     this.seasons = const [],
     this.mediaType = "movie",
     this.onNextEpisodeClicked,
+    required this.isInitializing,
   });
 
   Future forward15Second() async {

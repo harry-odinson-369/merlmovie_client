@@ -92,6 +92,7 @@ class CastClientController {
                 child: ExpandCollapseText(
                   text: this.notice!,
                   collapsedMaxLines: 15,
+                  textAlign: TextAlign.start,
                 ),
               ),
               actions:

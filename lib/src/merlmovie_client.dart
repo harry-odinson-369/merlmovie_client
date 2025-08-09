@@ -27,6 +27,7 @@ import 'package:merlmovie_client/src/widgets/browser.dart';
 import 'package:merlmovie_client/src/widgets/player.dart';
 import 'package:merlmovie_client/src/widgets/webview.dart';
 import 'package:merlmovie_client/src/widgets/webview_player.dart';
+import 'package:merlmovie_client/src/widgets/wss_select_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,6 +43,7 @@ class MerlMovieClient {
 
   static void setAdConfig(FlutterAutoAdmobConfig? config) {
     _autoAdmobConfig = config;
+    _autoAdmobConfig?.interstitialAdLoadType = FlutterAutoAdmobLoadType.none;
   }
 
   static Future closeWSSConnection() async {
@@ -182,6 +184,20 @@ class MerlMovieClient {
             NavigatorKey.currentContext?.read<BrowserProvider>().visible(
               wss.visible,
             );
+          } else if (wss.action == WSSAction.select) {
+            WSSSelectModel? selected = await showWSSSelectDialog(
+              List<WSSSelectModel>.from(
+                (wss.data["items"] ?? []).map((e) {
+                  return WSSSelectModel.fromMap(e);
+                }),
+              ),
+            );
+            final data = WSSDataModel(
+              action: WSSAction.select_result,
+              id: wss.id,
+              data: {"result": selected?.toMap()},
+            );
+            socket?.sendMessage(json.encode(data.toMap()));
           }
         } catch (_) {}
       }

@@ -123,7 +123,10 @@ class _MerlMovieClientWebViewPlayerState
         },
       ),
     );
-    webViewFlutterController?.loadRequest(Uri.parse(widget.embed.request_url));
+    webViewFlutterController?.loadRequest(
+      Uri.parse(widget.embed.request_url),
+      headers: widget.embed.plugin.headers ?? {},
+    );
     update();
   }
 

@@ -11,6 +11,7 @@ import 'package:merlmovie_client/src/cast_receiver/apis/client.dart';
 import 'package:merlmovie_client/src/cast_receiver/models/loading.dart';
 import 'package:merlmovie_client/src/cast_receiver/models/subtitle.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
+import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/helpers/proxy.dart';
@@ -31,6 +32,7 @@ import 'package:merlmovie_client/src/widgets/player_display_caption.dart';
 import 'package:merlmovie_client/src/widgets/player_loading.dart';
 import 'package:merlmovie_client/src/widgets/player_middle_controls.dart';
 import 'package:merlmovie_client/src/widgets/player_select_episode.dart';
+import 'package:merlmovie_client/src/widgets/player_skip_intro_button.dart';
 import 'package:merlmovie_client/src/widgets/player_subtitle_theme_editor.dart';
 import 'package:merlmovie_client/src/widgets/player_top_controls.dart';
 import 'package:merlmovie_client/src/widgets/player_video_builder.dart';
@@ -156,7 +158,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
 
   void update() => mounted ? setState(() {}) : () {};
 
-  Future initialize() async {
+  Future initialize({Duration? initialPos}) async {
     if (widget.plugins.isEmpty) {
       await load_plugin(embed.plugin);
     } else {
@@ -167,6 +169,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
           widget.plugins[i],
           showErrorOnRequest: isLast,
           showErrorOnLoadLink: isLast,
+          pos: initialPos,
         );
         if (isLoaded) break;
       }
@@ -199,6 +202,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     PluginModel plugin, {
     bool showErrorOnRequest = true,
     bool? showErrorOnLoadLink,
+    Duration? pos,
   }) async {
     embed.plugin = plugin;
     if (plugin.useWebView) {
@@ -207,6 +211,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     } else {
       await MerlMovieClient.closeWSSConnection();
       directLink = null;
+      controller?.removeListener(playerListener);
       await controller?.dispose();
       controller = null;
       directLink = null;
@@ -228,11 +233,18 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
           directLink = await widget.onDirectLinkRequested!(directLink!, embed);
           update();
         }
-
-        return await try_load_quality(
+        bool isLoaded = await try_load_quality(
           directLink!.qualities,
-          showErrorOnLoadLink,
+          showError: showErrorOnLoadLink,
+          pos: pos,
         );
+        SubtitleItem? sub = directLink?.subtitles.firstWhereOrNull(
+          (e) => e.isDefault,
+        );
+        if (sub != null) {
+          onSubtitleChanged(sub);
+        }
+        return isLoaded;
       } else {
         return false;
       }
@@ -240,16 +252,18 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   Future<bool> try_load_quality(
-    List<QualityItem> qualities, [
+    List<QualityItem> qualities, {
     bool? showError,
-  ]) async {
+    Duration? pos,
+  }) async {
     if (mounted) {
       for (int i = 0; i < qualities.length; i++) {
         final qua = qualities[i];
         bool isLast = (i + 1) >= qualities.length;
         bool isLoaded = await changeQuality(
           qua,
-          showError == true ? isLast : false,
+          showError: showError == true ? isLast : false,
+          pos: pos,
         );
         if (isLoaded) {
           return true;
@@ -288,10 +302,11 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   Future<bool> changeQuality(
-    QualityItem quality, [
+    QualityItem quality, {
     bool showError = false,
     bool force = false,
-  ]) async {
+    Duration? pos,
+  }) async {
     if (currentQuality?.link != quality.link || force) {
       try {
         isInitializing.value = true;
@@ -304,7 +319,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         if (CastClientController.instance.isConnected.value) {
           CastClientController.instance.status.addListener(_castListener);
           bool isLoaded = await CastClientController.instance.start(quality);
-          CastClientController.instance.seek(position);
+          CastClientController.instance.seek(pos ?? position);
           isInitializing.value = false;
           hideControls.value = true;
           createAutoAd();
@@ -312,7 +327,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         } else {
           await controller?.initialize();
           controller?.addListener(playerListener);
-          await controller?.seekTo(position);
+          await controller?.seekTo(pos ?? position);
           controller?.play().then((value) {
             hideControls.value = true;
             isInitializing.value = false;
@@ -542,7 +557,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   void onQualityChanged(QualityItem quality) {
-    changeQuality(quality, true);
+    changeQuality(quality, showError: true);
   }
 
   Future onTrailingClicked() async {
@@ -571,7 +586,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       subtitle?.real_link = null;
       subtitles.value = [];
       update();
-      initialize();
+      initialize(initialPos: Duration.zero);
     }
   }
 
@@ -588,17 +603,22 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     });
   }
 
-  void onBroadcastClicked(bool? connect) async {
+  void onBroadcastClicked(bool? connect, Duration? oldPosition) async {
     if (connect != null) {
       update();
-      Duration pos = Duration(seconds: position.inSeconds);
       if (currentQuality != null) {
-        await changeQuality(currentQuality!, true, true);
+        await changeQuality(currentQuality!, showError: true, force: true);
         if (CastClientController.instance.isConnected.value) {
-          CastClientController.instance.seek(pos);
+          if (oldPosition != null) {
+            CastClientController.instance.seek(oldPosition);
+          }
           CastClientController.instance.subtitle(
             subtitles.value.map((e) => CastSubtitle.parse(e)).toList(),
           );
+        } else {
+          if (oldPosition != null) {
+            controller?.seekTo(oldPosition);
+          }
         }
       }
     }
@@ -617,7 +637,10 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       update();
       List<Subtitle> arr = await compute((subtitle) async {
         bool isFetch = subtitle.type == SubtitleRootType.fetch;
-        String link = subtitle.real_link ?? subtitle.link;
+        String link =
+            subtitle.real_link != null && subtitle.real_link?.isNotEmpty == true
+                ? subtitle.real_link!
+                : subtitle.link;
         return await SubtitleHelper.fromNetwork(
           Uri.parse(link),
           headers: subtitle.headers,
@@ -691,7 +714,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
               TMDBImageSize.w300,
             );
             updateNewDetail(detail, movie);
-            initialize();
+            initialize(initialPos: Duration.zero);
           }
         } else {
           embed.thumbnail = TheMovieDbApi.getImage(
@@ -703,7 +726,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
             TMDBImageSize.w300,
           );
           updateNewDetail(detail, movie);
-          initialize();
+          initialize(initialPos: Duration.zero);
         }
       }
     }
@@ -767,7 +790,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     SubtitleTheme.getTheme().then((value) => subtitleTheme.value = value);
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
     WakelockPlus.enable();
-    initialize();
+    initialize(initialPos: widget.initialPosition);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PlayerStateProvider>(context, listen: false).setValue(true);
     });
@@ -842,8 +865,10 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                       controller: controller,
                       viewType: videoViewType,
                     );
-                  } else {
+                  } else if (connected) {
                     return PlayerCastHolder(embed: embed);
+                  } else {
+                    return SizedBox();
                   }
                 },
               ),
@@ -918,6 +943,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                             PlayerTopControls(
                               embed: embed,
                               controller: controller,
+                              currentQuality: currentQuality,
                               onTrailingClicked:
                                   widget.plugins.isNotEmpty
                                       ? onTrailingClicked
@@ -934,6 +960,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                             Center(
                               child: PlayerMiddleControls(
                                 controller: controller,
+                                currentQuality: currentQuality,
                                 isInitializing: isInitializing,
                                 currentEp: seasons_arr.findCurrentEpisode(
                                   embed,
@@ -978,7 +1005,36 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                       }
                       return AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
-                        child: isHiding ? SizedBox(key: UniqueKey()) : controls,
+                        child:
+                            isHiding
+                                ? Builder(
+                                  key: UniqueKey(),
+                                  builder: (context) {
+                                    if (controller != null) {
+                                      var pad = context.screen.height * .2;
+                                      return Column(
+                                        mainAxisSize: MainAxisSize.max,
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          Padding(
+                                            padding: EdgeInsets.only(bottom: pad, right: 12),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              children: [
+                                                PlayerSkipIntroButton(
+                                                  controller: controller!,
+                                                  currentQuality: currentQuality,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                    return SizedBox();
+                                  },
+                                )
+                                : controls,
                       );
                     },
                   ),

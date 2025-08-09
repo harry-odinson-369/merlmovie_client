@@ -46,7 +46,7 @@ class SubtitleHelper {
       if (extension == SubtitleFetchExtension.text) {
         final response = await http.get(uri, headers: headers);
         try {
-          String content = response.body;
+          String content = utf8.decode(response.bodyBytes);
           final format = SubtitleHelper.detectFormat(content);
           if (format == SubtitleType.srt || format == SubtitleType.vtt) {
             content = SubtitleHelper.cleanSubtitles(content);

@@ -113,12 +113,14 @@ class QualityItem {
   String link;
   Map<String, String>? headers;
   bool use_proxy = false;
+  SkipIntro? skipIntro;
 
   QualityItem({
     required this.name,
     required this.link,
     this.headers,
     this.use_proxy = false,
+    this.skipIntro,
   });
 
   factory QualityItem.fromMap(Map<String, dynamic> map) => QualityItem(
@@ -126,6 +128,7 @@ class QualityItem {
     link: map["link"] ?? "",
     headers: MapUtilities.convert<String, String>(map["headers"]),
     use_proxy: map["use_proxy"] ?? false,
+    skipIntro: map["skip_intro"] != null ? SkipIntro.fromMap(map["skip_intro"]) : null,
   );
 
   Map<String, dynamic> toMap() => {
@@ -133,7 +136,33 @@ class QualityItem {
     "link": link,
     "headers": headers,
     "use_proxy": use_proxy,
+    "skip_intro": skipIntro?.toMap(),
   };
+}
+
+class SkipIntro {
+  Duration? start;
+  Duration? end;
+
+  SkipIntro({this.start, this.end});
+
+  factory SkipIntro.fromMap(Map<String, dynamic> map) {
+    Duration? s;
+    Duration? e;
+    if (map["start"] != null) {
+      s = Duration(seconds: map["start"]);
+    }
+    if (map["end"] != null) {
+      e = Duration(seconds: map["end"]);
+    }
+    return SkipIntro(start: s, end: e);
+  }
+
+  Map<String, dynamic> toMap() => {
+    "start": start?.inSeconds,
+    "end:": end?.inSeconds,
+  };
+
 }
 
 class SubtitleItemKey {
@@ -182,6 +211,7 @@ class SubtitleItem {
   String name;
   String link;
   String? real_link;
+  bool isDefault = false;
   Map<String, String>? headers;
   SubtitleRootType type;
   SubtitleItemKey? key;
@@ -196,6 +226,7 @@ class SubtitleItem {
     this.real_link,
     this.headers,
     this.children = const [],
+    this.isDefault = false,
   });
 
   factory SubtitleItem.fromMap(Map<String, dynamic> map) => SubtitleItem(
@@ -203,6 +234,7 @@ class SubtitleItem {
     link: map["link"] ?? "",
     real_link: map["dlLink"] ?? "",
     key: map["key"] != null ? SubtitleItemKey.fromMap(map["key"]) : null,
+    isDefault: map["is_default"] ?? false,
     type:
         SubtitleRootType.values.firstWhereOrNull(
           (e) => e.name.toLowerCase() == (map["type"] ?? "normal"),
@@ -218,6 +250,7 @@ class SubtitleItem {
     "type": type.name,
     "dlLink": real_link,
     "headers": headers,
+    "is_default": isDefault,
     "key": key?.toMap(),
     "children": children,
   };

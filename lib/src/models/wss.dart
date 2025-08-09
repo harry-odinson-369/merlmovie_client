@@ -21,6 +21,8 @@ enum WSSAction {
   browser_cookie_result,
   browser_set_cookie,
   browser_visible,
+  select,
+  select_result,
 }
 
 class WSSDataModel {
@@ -69,6 +71,32 @@ class WSSDataModel {
 enum BrowserWebType { web_0, web_1 }
 
 enum BrowserWebVisible { no, yes }
+
+class WSSSelectModel {
+  String title, image, subtitle;
+  Map<String, dynamic> data;
+
+  WSSSelectModel({
+    this.title = "",
+    this.subtitle = "",
+    this.image = "",
+    this.data = const {},
+  });
+
+  factory WSSSelectModel.fromMap(Map<String, dynamic> map) => WSSSelectModel(
+    title: map["title"] ?? "",
+    subtitle: map["subtitle"] ?? "",
+    image: map["image"] ?? "",
+    data: MapUtilities.convert<String, dynamic>(map["data"]) ?? {},
+  );
+
+  Map<String, dynamic> toMap() => {
+    "title": title,
+    "subtitle": subtitle,
+    "image": image,
+    "data": data,
+  };
+}
 
 class WSSBrowserWebDataModel {
   BrowserWebType type = BrowserWebType.web_0;

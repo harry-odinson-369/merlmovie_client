@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +12,7 @@ import 'package:merlmovie_client/src/widgets/player_select_episode.dart';
 import 'package:merlmovie_client/src/widgets/player_select_quality.dart';
 import 'package:merlmovie_client/src/widgets/player_select_similar_sheet.dart';
 import 'package:merlmovie_client/src/widgets/player_select_subtitle.dart';
+import 'package:merlmovie_client/src/widgets/player_skip_intro_button.dart';
 import 'package:video_player/video_player.dart';
 
 class PlayerBottomControls extends StatelessWidget {
@@ -32,7 +35,7 @@ class PlayerBottomControls extends StatelessWidget {
   final void Function(MovieModel movie)? onSimilarChanged;
   final void Function()? preventHideControls;
   final void Function()? onEditSubtitleThemeClicked;
-  final void Function(bool? connected)? onBroadcastClicked;
+  final void Function(bool? connected, Duration? position)? onBroadcastClicked;
   const PlayerBottomControls({
     super.key,
     this.controller,
@@ -240,10 +243,11 @@ class PlayerBottomControls extends StatelessWidget {
         builder: (context, connected, child) {
           return PlayerBottomControlsButton(
             onTap: () async {
+              Duration? pos = controller?.value.position;
               bool? connect = await CastClientController.instance.toggleConnect(
                 showOnError: true,
               );
-              onBroadcastClicked?.call(connect);
+              onBroadcastClicked?.call(connect, pos);
             },
             icon: connected ? Icons.cast_connected : Icons.cast,
             label: "Broadcast",
@@ -306,13 +310,37 @@ class PlayerBottomControls extends StatelessWidget {
               ValueListenableBuilder(
                 valueListenable: controller!,
                 builder: (context, value, _) {
-                  return progressBar(
-                    value.position,
-                    value.duration,
-                    value.buffered,
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (currentQuality?.skipIntro?.end != null &&
+                          value.position.inSeconds <
+                              currentQuality!.skipIntro!.end!.inSeconds &&
+                          value.isInitialized)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              PlayerSkipIntroButton(
+                                controller: controller!,
+                                playerValue: value,
+                                currentQuality: currentQuality,
+                              ),
+                            ],
+                          ),
+                        ),
+                      progressBar(
+                        value.position,
+                        value.duration,
+                        value.buffered,
+                      ),
+                    ],
                   );
                 },
               ),
+            if (controller == null)
+              progressBar(Duration.zero, Duration.zero, []),
             SizedBox(height: 12),
             NotificationListener(
               onNotification: (notification) {
