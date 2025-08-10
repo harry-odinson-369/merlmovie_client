@@ -2,12 +2,22 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:merlmovie_client/merlmovie_client.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/action.dart';
+import 'package:merlmovie_client/src/global/global.vars.dart';
+import 'package:merlmovie_client/src/models/cast_action.dart';
 import 'package:merlmovie_client/src/controllers/socket_controller.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
+import 'package:merlmovie_client/src/extensions/completer.dart';
+import 'package:merlmovie_client/src/models/cast_info.dart';
+import 'package:merlmovie_client/src/models/cast_landing.dart';
+import 'package:merlmovie_client/src/models/cast_loading.dart';
+import 'package:merlmovie_client/src/models/cast_player_value.dart';
+import 'package:merlmovie_client/src/models/cast_subtitle.dart';
+import 'package:merlmovie_client/src/models/direct_link.dart';
+import 'package:merlmovie_client/src/models/subtitle.dart';
 import 'package:merlmovie_client/src/widgets/await_dialog.dart';
 import 'package:merlmovie_client/src/widgets/hyperlink.dart';
+import 'package:merlmovie_client/src/widgets/player_video_builder.dart';
+import 'package:merlmovie_client/src/widgets/prompt_dialog.dart';
 import 'package:wifi_address_helper/wifi_address_helper.dart';
 
 class CastClientController {
@@ -152,9 +162,9 @@ class CastClientController {
     _controller?.message?.listen((event) {
       var msg = ServerAction.fromMap(json.decode(event.toString()));
       if (msg.action == ActionServer.video_loaded) {
-        completer.done(true);
+        completer.finish(true);
       } else if (msg.action == ActionServer.video_error) {
-        completer.done(false);
+        completer.finish(false);
       }
     });
     var theme = await SubtitleTheme.getTheme();
@@ -268,7 +278,7 @@ class CastClientController {
     socket.message?.listen((event) {
       var msg = ServerAction.fromMap(json.decode(event.toString()));
       if (msg.action == ActionServer.connected) {
-        completer.done(CastDeviceInfo.fromMap(msg.payload));
+        completer.finish(CastDeviceInfo.fromMap(msg.payload));
       }
     });
     socket.sendMessage(

@@ -3,19 +3,19 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/action.dart';
-import 'package:merlmovie_client/src/cast_receiver/apis/server.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/landing.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/loading.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/player_value.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/subtitle.dart';
-import 'package:merlmovie_client/src/cast_receiver/widgets/landing_board.dart';
-import 'package:merlmovie_client/src/cast_receiver/widgets/switch.dart';
+import 'package:merlmovie_client/src/models/cast_action.dart';
+import 'package:merlmovie_client/src/models/cast_landing.dart';
+import 'package:merlmovie_client/src/models/cast_loading.dart';
+import 'package:merlmovie_client/src/models/cast_player_value.dart';
+import 'package:merlmovie_client/src/models/cast_subtitle.dart';
+import 'package:merlmovie_client/src/widgets/cast_landing_board.dart';
+import 'package:merlmovie_client/src/widgets/cast_switch.dart';
 import 'package:merlmovie_client/src/models/direct_link.dart';
 import 'package:merlmovie_client/src/models/subtitle.dart';
 import 'package:merlmovie_client/src/widgets/player_display_caption.dart';
 import 'package:merlmovie_client/src/widgets/player_over_loading.dart';
 import 'package:merlmovie_client/src/widgets/player_video_builder.dart';
+import 'package:merlmovie_client/src/apis/server.dart';
 import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 

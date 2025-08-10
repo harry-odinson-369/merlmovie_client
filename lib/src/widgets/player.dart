@@ -7,9 +7,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_auto_admob/flutter_auto_admob.dart';
-import 'package:merlmovie_client/src/cast_receiver/apis/client.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/loading.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/subtitle.dart';
+import 'package:merlmovie_client/src/apis/client.dart';
+import 'package:merlmovie_client/src/models/cast_loading.dart';
+import 'package:merlmovie_client/src/models/cast_subtitle.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
@@ -813,7 +813,15 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         }
       });
     }
-    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = null;
+    if (_flutterAutoAdmob != null) {
+      _flutterAutoAdmob?.interstitial.onLoadedCallback = null;
+      _flutterAutoAdmob?.interstitial.onShowedCallback = null;
+      _flutterAutoAdmob?.interstitial.onClosedCallback = null;
+    } else {
+      FlutterAutoAdmob.ads.interstitial.onLoadedCallback = null;
+      FlutterAutoAdmob.ads.interstitial.onShowedCallback = null;
+      FlutterAutoAdmob.ads.interstitial.onClosedCallback = null;
+    }
     MerlMovieClient.closeWSSConnection();
     _animationController?.dispose();
     hideControls.removeListener(hideControlsListener);
@@ -960,7 +968,6 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                             Center(
                               child: PlayerMiddleControls(
                                 controller: controller,
-                                currentQuality: currentQuality,
                                 isInitializing: isInitializing,
                                 currentEp: seasons_arr.findCurrentEpisode(
                                   embed,
@@ -1014,16 +1021,22 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                                       var pad = context.screen.height * .2;
                                       return Column(
                                         mainAxisSize: MainAxisSize.max,
-                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
                                         children: [
                                           Padding(
-                                            padding: EdgeInsets.only(bottom: pad, right: 12),
+                                            padding: EdgeInsets.only(
+                                              bottom: pad,
+                                              right: 12,
+                                            ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
                                               children: [
                                                 PlayerSkipIntroButton(
                                                   controller: controller!,
-                                                  currentQuality: currentQuality,
+                                                  currentQuality:
+                                                      currentQuality,
                                                 ),
                                               ],
                                             ),

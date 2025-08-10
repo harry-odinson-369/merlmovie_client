@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/landing.dart';
+import 'package:merlmovie_client/src/models/cast_landing.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 
 class LandingBoard extends StatelessWidget {

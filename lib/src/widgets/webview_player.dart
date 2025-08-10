@@ -392,7 +392,11 @@ class _MerlMovieClientWebViewPlayerState
         }
       });
     }
-    FlutterAutoAdmob.ads.interstitial.onLoadedCallback = null;
+    if (_flutterAutoAdmob != null) {
+      _flutterAutoAdmob?.interstitial.onLoadedCallback = null;
+    } else {
+      FlutterAutoAdmob.ads.interstitial.onLoadedCallback = null;
+    }
     webViewFlutterController?.setNavigationDelegate(NavigationDelegate());
     webViewFlutterController?.loadRequest(Uri.parse("about:blank"));
     webViewFlutterController = null;

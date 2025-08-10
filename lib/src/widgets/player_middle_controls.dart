@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:merlmovie_client/src/cast_receiver/apis/client.dart';
+import 'package:merlmovie_client/src/apis/client.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
 import 'package:merlmovie_client/src/helpers/assets.dart';
 import 'package:merlmovie_client/src/models/movie.dart';

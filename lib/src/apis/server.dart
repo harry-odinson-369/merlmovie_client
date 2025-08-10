@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:merlmovie_client/merlmovie_client.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/action.dart';
+import 'package:merlmovie_client/src/models/cast_action.dart';
+import 'package:merlmovie_client/src/models/cast_info.dart';
+import 'package:merlmovie_client/src/models/cast_landing.dart';
 import 'package:wifi_address_helper/wifi_address_helper.dart';
 
 class ServerControl {

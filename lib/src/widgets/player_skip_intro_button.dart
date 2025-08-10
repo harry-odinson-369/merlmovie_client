@@ -1,7 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:merlmovie_client/src/cast_receiver/apis/client.dart';
+import 'package:merlmovie_client/src/apis/client.dart';
 import 'package:merlmovie_client/src/models/direct_link.dart';
 import 'package:video_player/video_player.dart';
 

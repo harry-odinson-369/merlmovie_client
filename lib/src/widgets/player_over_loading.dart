@@ -3,7 +3,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:merlmovie_client/src/cast_receiver/apis/client.dart';
+import 'package:merlmovie_client/src/apis/client.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/models/embed.dart';
 import 'package:url_launcher/url_launcher.dart';

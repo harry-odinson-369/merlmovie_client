@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:merlmovie_client/merlmovie_client.dart';
 import 'package:video_player/video_player.dart';
+import 'package:merlmovie_client/src/apis/client.dart';
 
 bool _isPaused = false;
 

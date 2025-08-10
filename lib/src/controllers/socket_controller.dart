@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:merlmovie_client/src/cast_receiver/models/action.dart';
+import 'package:merlmovie_client/src/models/cast_action.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class SocketController {

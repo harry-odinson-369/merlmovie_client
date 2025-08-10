@@ -1,11 +1,14 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:merlmovie_client/merlmovie_client.dart';
+import 'package:video_player/video_player.dart';
+import 'package:merlmovie_client/src/apis/client.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
+import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/helpers/duration.dart';
+import 'package:merlmovie_client/src/models/direct_link.dart';
+import 'package:merlmovie_client/src/models/movie.dart';
 import 'package:merlmovie_client/src/widgets/player_bottom_controls_button.dart';
 import 'package:merlmovie_client/src/widgets/player_playback_speed.dart';
 import 'package:merlmovie_client/src/widgets/player_select_episode.dart';
@@ -13,7 +16,8 @@ import 'package:merlmovie_client/src/widgets/player_select_quality.dart';
 import 'package:merlmovie_client/src/widgets/player_select_similar_sheet.dart';
 import 'package:merlmovie_client/src/widgets/player_select_subtitle.dart';
 import 'package:merlmovie_client/src/widgets/player_skip_intro_button.dart';
-import 'package:video_player/video_player.dart';
+import 'package:merlmovie_client/src/widgets/player_video_builder.dart';
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 
 class PlayerBottomControls extends StatelessWidget {
   final VideoPlayerController? controller;
