@@ -391,6 +391,7 @@ class _MerlMovieClientWebViewPlayerState
           ).setValue(false);
         }
       });
+      FlutterAutoAdmob.ads.interstitial.cooldown();
     }
     if (_flutterAutoAdmob != null) {
       _flutterAutoAdmob?.interstitial.onLoadedCallback = null;
