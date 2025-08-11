@@ -5,9 +5,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_auto_admob/flutter_auto_admob.dart';
 import 'package:http/http.dart';
-import 'package:merlmovie_client/src/controllers/socket_controller.dart';
+import 'package:merlmovie_client/src/controllers/socket.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
 import 'package:merlmovie_client/src/extensions/global_key.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
@@ -32,18 +31,20 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 SocketController? _controller;
-FlutterAutoAdmobConfig? _autoAdmobConfig;
+String? _adUnitId;
+Duration? _adInterval;
 
 class MerlMovieClient {
   static SocketController? get socket => _controller;
 
   static bool get isPlayerActive => NavigatorKey.isPlayerActive;
 
-  static FlutterAutoAdmobConfig? get adConfig => _autoAdmobConfig;
+  static String? get interstitialAdUnitId => _adUnitId;
+  static Duration get interstitialAdInterval => _adInterval ?? Duration(minutes: 15);
 
-  static void setAdConfig(FlutterAutoAdmobConfig? config) {
-    _autoAdmobConfig = config;
-    _autoAdmobConfig?.interstitialAdLoadType = FlutterAutoAdmobLoadType.none;
+  static void setAdConfig({String? adUnitId, Duration? adInterval}) {
+    _adUnitId = adUnitId ?? _adUnitId;
+    _adInterval = adInterval ?? _adInterval;
   }
 
   static Future closeWSSConnection() async {

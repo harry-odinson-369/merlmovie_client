@@ -5,7 +5,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:merlmovie_client/src/controllers/socket_controller.dart';
+import 'package:merlmovie_client/src/controllers/socket.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';

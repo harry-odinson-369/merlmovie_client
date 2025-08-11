@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/models/cast_action.dart';
-import 'package:merlmovie_client/src/controllers/socket_controller.dart';
+import 'package:merlmovie_client/src/controllers/socket.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
 import 'package:merlmovie_client/src/models/cast_info.dart';

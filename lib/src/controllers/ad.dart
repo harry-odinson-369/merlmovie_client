@@ -7,11 +7,23 @@ import 'package:video_player/video_player.dart';
 class VideoAdController {
   VideoAdController({
     required this.adUnitId,
-    required this.controller,
+    this.controller,
     this.interval = const Duration(minutes: 15),
   });
 
-  VideoPlayerController controller;
+  VideoAdController.periodic({
+    required this.adUnitId,
+    this.interval = const Duration(minutes: 15),
+    bool isShowImmediately = true,
+  }) {
+    _isPeriodic = true;
+    _isPeriodicShowImmediately = isShowImmediately;
+  }
+
+  bool _isPeriodicShowImmediately = true;
+  bool _isPeriodic = false;
+
+  VideoPlayerController? controller;
 
   String adUnitId;
   bool isShowing = false;
@@ -24,30 +36,29 @@ class VideoAdController {
   Timer? _timer;
 
   void start() {
-    controller.addListener(_playerListener);
-    _timer = Timer(interval, () => isCooldown = false);
+    if (!_isPeriodic) controller?.addListener(_playerListener);
+    _timer = _createNewTimer();
   }
 
-  Future<bool> _show() async {
+  Future<bool> show() async {
+    isCooldown = true;
     Completer<bool> completer = Completer<bool>();
     var advertisement = await _requestAd();
     if (advertisement == null) {
-      isCooldown = false;
+      isShowing = false;
+      _timer = _createNewTimer();
       completer.finish(false);
       return false;
     }
     advertisement.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         isShowing = true;
-        isCooldown = true;
         onShowed?.call();
       },
       onAdDismissedFullScreenContent: (ad) {
         isShowing = false;
         onClosed?.call();
-        _timer?.cancel();
-        _timer = null;
-        _timer = Timer(interval, () => isCooldown = false);
+        _timer = _createNewTimer();
         completer.finish(true);
         ad.dispose();
       },
@@ -60,6 +71,24 @@ class VideoAdController {
     );
     advertisement.show();
     return completer.future;
+  }
+
+  Timer _createNewTimer() {
+    _timer?.cancel();
+    _timer = null;
+    if (_isPeriodic) {
+      return Timer.periodic(interval, (timer) {
+        if (!isShowing) {
+          if (_isPeriodicShowImmediately) {
+            show();
+          } else {
+            isCooldown = false;
+          }
+        }
+      });
+    } else {
+      return Timer(interval, () => isCooldown = false);
+    }
   }
 
   Future<InterstitialAd?> _requestAd() async {
@@ -76,12 +105,16 @@ class VideoAdController {
   }
 
   void _playerListener() {
-    if (controller.value.isPlaying && !isShowing && !isCooldown) _show();
+    if (controller?.value.isPlaying == true && !isShowing && !isCooldown) {
+      show();
+    }
   }
 
   void dispose() {
     _timer?.cancel();
     _timer = null;
-    controller.removeListener(_playerListener);
+    onShowed = null;
+    onClosed = null;
+    controller?.removeListener(_playerListener);
   }
 }

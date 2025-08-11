@@ -6,7 +6,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_auto_admob/flutter_auto_admob.dart';
+import 'package:merlmovie_client/src/controllers/ad.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
@@ -78,7 +78,7 @@ class _MerlMovieClientWebViewPlayerState
 
   Timer? _hideBarButtonsTimer;
 
-  FlutterAutoAdmob? _flutterAutoAdmob;
+  VideoAdController? _adController;
 
   Future createWebViewFlutterController() async {
     if (Platform.isIOS) {
@@ -155,12 +155,11 @@ class _MerlMovieClientWebViewPlayerState
   }
 
   void createAutoAd() {
-    if (MerlMovieClient.adConfig != null) {
-      _flutterAutoAdmob = FlutterAutoAdmob();
-      _flutterAutoAdmob?.configure(config: MerlMovieClient.adConfig!);
-      _flutterAutoAdmob?.interstitial.onLoadedCallback = () {
-        _flutterAutoAdmob?.interstitial.show();
-      };
+    if (MerlMovieClient.interstitialAdUnitId != null) {
+      _adController = VideoAdController.periodic(
+        adUnitId: MerlMovieClient.interstitialAdUnitId!,
+        interval: MerlMovieClient.interstitialAdInterval,
+      )..start();
     }
   }
 
@@ -387,10 +386,9 @@ class _MerlMovieClientWebViewPlayerState
           ).setValue(false);
         }
       });
-      FlutterAutoAdmob.ads.interstitial.cooldown();
     }
-    _flutterAutoAdmob?.interstitial.dispose();
-    _flutterAutoAdmob = null;
+    _adController?.dispose();
+    _adController = null;
     webViewFlutterController?.setNavigationDelegate(NavigationDelegate());
     webViewFlutterController?.loadRequest(Uri.parse("about:blank"));
     webViewFlutterController = null;

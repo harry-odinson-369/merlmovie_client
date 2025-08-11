@@ -5,6 +5,7 @@ export 'src/helpers/logger.dart';
 
 export 'src/apis/client.dart';
 export 'src/apis/server.dart';
+export 'src/controllers/ad.dart';
 
 export 'src/models/plugin.dart';
 export 'src/models/direct_link.dart';
@@ -33,4 +34,3 @@ export 'src/providers/browser.dart';
 
 export 'package:wakelock_plus/wakelock_plus.dart' show WakelockPlus;
 export 'package:provider/provider.dart' show ChangeNotifierProvider;
-export 'package:flutter_auto_admob/flutter_auto_admob.dart';
