@@ -109,7 +109,7 @@ class _MerlMovieClientWebViewPlayerState
         onNavigationRequest: (request) async {
           final uri = Uri.parse(request.url);
           bool isMatched = widget.embed.plugin.allowedDomains.exist(
-            (e) => e == uri.domainNameOnly,
+            (e) => e == uri.hostname_only,
           );
           if (request.isMainFrame && !isMatched) {
             if (popup_links.length >= 3) {
@@ -160,10 +160,6 @@ class _MerlMovieClientWebViewPlayerState
       _flutterAutoAdmob?.configure(config: MerlMovieClient.adConfig!);
       _flutterAutoAdmob?.interstitial.onLoadedCallback = () {
         _flutterAutoAdmob?.interstitial.show();
-      };
-    } else {
-      FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
-        FlutterAutoAdmob.ads.interstitial.show();
       };
     }
   }
@@ -393,11 +389,8 @@ class _MerlMovieClientWebViewPlayerState
       });
       FlutterAutoAdmob.ads.interstitial.cooldown();
     }
-    if (_flutterAutoAdmob != null) {
-      _flutterAutoAdmob?.interstitial.onLoadedCallback = null;
-    } else {
-      FlutterAutoAdmob.ads.interstitial.onLoadedCallback = null;
-    }
+    _flutterAutoAdmob?.interstitial.dispose();
+    _flutterAutoAdmob = null;
     webViewFlutterController?.setNavigationDelegate(NavigationDelegate());
     webViewFlutterController?.loadRequest(Uri.parse("about:blank"));
     webViewFlutterController = null;

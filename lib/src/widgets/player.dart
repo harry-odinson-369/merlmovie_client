@@ -391,20 +391,18 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
   }
 
-  void onAdClosed() {
-    try {
-      controller?.play();
-    } catch (_) {}
-    if (CastClientController.instance.isConnected.value) {
-      CastClientController.instance.play();
-    }
-  }
-
   void createAutoAd() {
     if (MerlMovieClient.adConfig != null) {
       _flutterAutoAdmob = FlutterAutoAdmob();
       _flutterAutoAdmob?.configure(config: MerlMovieClient.adConfig!);
-      _flutterAutoAdmob?.interstitial.onClosedCallback = onAdClosed;
+      _flutterAutoAdmob?.interstitial.onClosedCallback = () {
+        try {
+          controller?.play();
+        } catch (_) {}
+        if (CastClientController.instance.isConnected.value) {
+          CastClientController.instance.play();
+        }
+      };
       _flutterAutoAdmob?.interstitial.onShowedCallback = () {
         try {
           controller?.pause();
@@ -415,19 +413,6 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       };
       _flutterAutoAdmob?.interstitial.onLoadedCallback = () {
         _flutterAutoAdmob?.interstitial.show();
-      };
-    } else {
-      FlutterAutoAdmob.ads.interstitial.onClosedCallback = onAdClosed;
-      FlutterAutoAdmob.ads.interstitial.onShowedCallback = () {
-        try {
-          controller?.pause();
-        } catch (_) {}
-        if (CastClientController.instance.isConnected.value) {
-          CastClientController.instance.pause();
-        }
-      };
-      FlutterAutoAdmob.ads.interstitial.onLoadedCallback = () {
-        FlutterAutoAdmob.ads.interstitial.show();
       };
     }
   }
@@ -814,15 +799,8 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       });
       FlutterAutoAdmob.ads.interstitial.cooldown();
     }
-    if (_flutterAutoAdmob != null) {
-      _flutterAutoAdmob?.interstitial.onLoadedCallback = null;
-      _flutterAutoAdmob?.interstitial.onShowedCallback = null;
-      _flutterAutoAdmob?.interstitial.onClosedCallback = null;
-    } else {
-      FlutterAutoAdmob.ads.interstitial.onLoadedCallback = null;
-      FlutterAutoAdmob.ads.interstitial.onShowedCallback = null;
-      FlutterAutoAdmob.ads.interstitial.onClosedCallback = null;
-    }
+    _flutterAutoAdmob?.interstitial.dispose();
+    _flutterAutoAdmob = null;
     MerlMovieClient.closeWSSConnection();
     _animationController?.dispose();
     hideControls.removeListener(hideControlsListener);

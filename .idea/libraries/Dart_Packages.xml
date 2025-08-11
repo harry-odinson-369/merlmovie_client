@@ -152,7 +152,7 @@
         <entry key="flutter_auto_admob">
           <value>
             <list>
-              <option value="$USER_HOME$/.pub-cache/git/flutter_auto_admob-be2efc1ed59644630093863d8843fc798ae7adfc//lib" />
+              <option value="$USER_HOME$/.pub-cache/git/flutter_auto_admob-07d44a9931a8e52d3ed91dc6d982c39e862f63a7//lib" />
             </list>
           </value>
         </entry>
@@ -887,7 +887,7 @@
       </option>
     </properties>
     <CLASSES>
-      <root url="file://$USER_HOME$/.pub-cache/git/flutter_auto_admob-be2efc1ed59644630093863d8843fc798ae7adfc//lib" />
+      <root url="file://$USER_HOME$/.pub-cache/git/flutter_auto_admob-07d44a9931a8e52d3ed91dc6d982c39e862f63a7//lib" />
       <root url="file://$USER_HOME$/.pub-cache/git/subtitle-f5054665d79199ead8d4a6236a6cdef9313ac345//lib" />
       <root url="file://$USER_HOME$/.pub-cache/git/video_player-f021ba8c3e22766e90d12e22a5ba7cd8c15922a3//lib" />
       <root url="file://$USER_HOME$/.pub-cache/git/video_player_android-a6b992ad64460d65daf94f9ea60748e7a657aa33//lib" />

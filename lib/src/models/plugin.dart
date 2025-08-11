@@ -99,12 +99,12 @@ class PluginModel {
 
     if (url != null) {
       final uri = Uri.parse(url);
-      allowedDomains0.add(uri.domainNameOnly);
+      allowedDomains0.add(uri.hostname_only);
     }
 
     if (tvUrl != null) {
       final uri = Uri.parse(tvUrl);
-      allowedDomains0.add(uri.domainNameOnly);
+      allowedDomains0.add(uri.hostname_only);
     }
 
     allowedDomains0 = LinkedHashSet<String>.from(allowedDomains0).toList();

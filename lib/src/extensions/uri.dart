@@ -1,5 +1,5 @@
 extension UriExtension on Uri {
-  String get domainNameOnly {
+  String get hostname_only {
     List<String> parts = host.split('.');
     if (parts.length > 2) {
       return parts[parts.length - 2];
