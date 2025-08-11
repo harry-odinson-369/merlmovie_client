@@ -235,7 +235,7 @@ class _BrowserWidgetState extends State<BrowserWidget> {
   @override
   void initState() {
     super.initState();
-    LoggerHelper.logMsg("[Browser] Spawning new instance...");
+    MerlMovieClientLogger.logMsg("[Browser] Spawning new instance...");
     if (widget.info.type == BrowserWebType.web_0) {
       initializeWeb0();
     }
@@ -251,7 +251,7 @@ class _BrowserWidgetState extends State<BrowserWidget> {
     controller1?.dispose();
     subscription?.cancel();
     subscription = null;
-    LoggerHelper.logMsg("[Browser] Instance closed!");
+    MerlMovieClientLogger.logMsg("[Browser] Instance closed!");
   }
 
   @override

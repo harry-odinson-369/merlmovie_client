@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:merlmovie_client/src/models/plugin.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class InformationHelper {
@@ -35,17 +36,21 @@ class InformationHelper {
     return deviceInformation;
   }
 
-  static Future<String> get xci async {
+  static Future<String> xci(PluginModel plugin) async {
     String info = json.encode({
       "device_info": await deviceInfo,
       "app_info": await appInfo,
+      "plugin_info": plugin.toMap(),
     });
     final encoded = base64.encode(utf8.encode(info));
     return encoded;
   }
 
-  static Future<String> requestUrlWithXCI(String requestUrl) async {
-    String xciEncoded = await xci;
+  static Future<String> requestUrlWithXCI(
+    String requestUrl,
+    PluginModel plugin,
+  ) async {
+    String xciEncoded = await xci(plugin);
     if (requestUrl.contains("?")) {
       return "$requestUrl&__xci__=$xciEncoded";
     } else {

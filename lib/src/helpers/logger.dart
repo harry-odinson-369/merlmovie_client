@@ -2,7 +2,7 @@ import 'dart:developer';
 
 bool _isDebug = false;
 
-class LoggerHelper {
+class MerlMovieClientLogger {
   static void setDebug(bool isDebug) {
     _isDebug = isDebug;
   }

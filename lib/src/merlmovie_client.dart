@@ -76,10 +76,11 @@ class MerlMovieClient {
   }) async {
     Response response;
 
-    LoggerHelper.logMsg("Requesting to target ${embed.request_url}...");
+    MerlMovieClientLogger.logMsg("Requesting to target ${embed.request_url}...");
 
     String requestUrl = await InformationHelper.requestUrlWithXCI(
       embed.request_url,
+      embed.plugin,
     );
 
     if (embed.isWSS) {
@@ -94,7 +95,7 @@ class MerlMovieClient {
           headers: embed.plugin.headers,
         );
       } catch (err) {
-        LoggerHelper.logMsg("Error! ${err.toString()}");
+        MerlMovieClientLogger.logMsg("Error! ${err.toString()}");
         response = _errorResponse(500, "Unexpected error occurred!");
       }
     }
@@ -116,10 +117,10 @@ class MerlMovieClient {
               res["message"] ??
               "Unexpected error! Please try again.";
           onError?.call(response.statusCode, msg);
-          LoggerHelper.logMsg(msg);
+          MerlMovieClientLogger.logMsg(msg);
         }
       } catch (err) {
-        LoggerHelper.logMsg("Error! cannot get direct link at the moment.");
+        MerlMovieClientLogger.logMsg("Error! cannot get direct link at the moment.");
         onError?.call(500, "Cannot get direct link! unexpected error.");
       }
     }
@@ -142,7 +143,7 @@ class MerlMovieClient {
         );
       }
 
-      LoggerHelper.logMsg("Request using websocket. ready to communicate.");
+      MerlMovieClientLogger.logMsg("Request using websocket. ready to communicate.");
 
       void handler(dynamic event) async {
         try {
@@ -217,7 +218,7 @@ class MerlMovieClient {
       );
       socket?.sendMessage(json.encode(streamData.toMap()));
     } catch (err) {
-      LoggerHelper.logMsg("Error! ${err.toString()}");
+      MerlMovieClientLogger.logMsg("Error! ${err.toString()}");
       completer.finish(_errorResponse(500, "Unexpected error occurred!"));
     }
 

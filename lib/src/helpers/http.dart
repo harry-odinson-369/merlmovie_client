@@ -82,7 +82,7 @@ class HTTPRequest {
         );
       },
     )..run();
-    LoggerHelper.logMsg(
+    MerlMovieClientLogger.logMsg(
       "[Axios Request] Spawn a headless browser and making http request.",
     );
     if (timeout != null) {
@@ -92,7 +92,7 @@ class HTTPRequest {
     }
     final response = await completer.future;
     await hl.dispose();
-    LoggerHelper.logMsg("[Axios Request] Closed headless browser.");
+    MerlMovieClientLogger.logMsg("[Axios Request] Closed headless browser.");
     return response;
   }
 
