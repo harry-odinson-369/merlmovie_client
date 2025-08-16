@@ -130,7 +130,7 @@ class CastClientController {
             await showPromptDialog(
               title: "Error",
               subtitle:
-                  "We couldn't find the Media Receiver on your local network! Please make sure your phone and TV are connected to the same Wi-Fi network, and ensure the Media Receiver app is open on your TV.",
+                  "We couldn't find the Media Receiver on your local network! Please make sure your phone and TV are connected to the same Wi-Fi network, and ensure the [Media Receiver](https://play.google.com/store/apps/details?id=com.NOUVANNET.scanner) app is open on your TV.",
               button: PromptDialogButton.ok,
             );
           }
