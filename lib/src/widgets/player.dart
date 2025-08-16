@@ -212,7 +212,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       await MerlMovieClient.closeWSSConnection();
       directLink = null;
       controller?.removeListener(playerListener);
-      await controller?.dispose();
+      await controller?.dispose().catchError((_) {});
       controller = null;
       directLink = null;
       progress = 0;
@@ -310,7 +310,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     if (currentQuality?.link != quality.link || force) {
       try {
         isInitializing.value = true;
-        await controller?.dispose();
+        await controller?.dispose().catchError((_) {});
         controller = null;
         currentQuality = quality;
         controller = await create_video_controller(quality);
@@ -519,7 +519,12 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         playAsWebView();
       }
     } else {
-      load_plugin(plugin, showErrorOnRequest: true, showErrorOnLoadLink: true);
+      load_plugin(
+        plugin,
+        showErrorOnRequest: true,
+        showErrorOnLoadLink: true,
+        pos: controller?.value.position,
+      );
     }
   }
 
@@ -541,7 +546,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   void onQualityChanged(QualityItem quality) {
-    changeQuality(quality, showError: true);
+    changeQuality(quality, showError: true, pos: controller?.value.position);
   }
 
   Future onTrailingClicked() async {
@@ -663,7 +668,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     ];
     update();
     await MerlMovieClient.closeWSSConnection();
-    await controller?.dispose();
+    await controller?.dispose().catchError((err) {});
     controller = null;
     position = Duration.zero;
     update();
@@ -808,7 +813,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         widget.callback?.onDecideAsWatched?.call(embed);
       }
     }
-    controller?.dispose();
+    controller?.dispose().catchError((_) {});
     controller = null;
     CastClientController.instance.idle();
     super.dispose();
@@ -977,8 +982,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                               preventHideControls: preventHideControls,
                               onSimilarChanged: onSimilarChanged,
                               onPlaybackSpeedChanged: onPlaybackSpeedChanged,
-                              onEditSubtitleThemeClicked:
-                                  onEditSubtitleThemeClicked,
+                              onEditSubtitleThemeClicked: onEditSubtitleThemeClicked,
                               onBroadcastClicked: onBroadcastClicked,
                             ),
                           ],
