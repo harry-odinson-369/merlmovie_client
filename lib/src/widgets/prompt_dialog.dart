@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
+import 'package:merlmovie_client/src/widgets/hyperlink.dart';
 
 enum PromptDialogButton { noYes, cancelOk, ok }
 
@@ -127,7 +128,12 @@ class PromptDialog extends StatelessWidget {
         content:
             subtitle == null
                 ? null
-                : Text(subtitle ?? "", style: subtitleStyle),
+                : ExpandCollapseText(
+                  text: subtitle ?? "",
+                  style: subtitleStyle,
+                  collapsedMaxLines: 999,
+                  textAlign: TextAlign.start,
+                ),
         actions: actions,
       );
     } else {
@@ -141,9 +147,19 @@ class PromptDialog extends StatelessWidget {
                   ? null
                   : scrollableSubtitle
                   ? SingleChildScrollView(
-                    child: Text(subtitle ?? "", style: subtitleStyle),
+                    child: ExpandCollapseText(
+                      text: subtitle ?? "",
+                      style: subtitleStyle,
+                      textAlign: TextAlign.start,
+                      collapsedMaxLines: 999,
+                    ),
                   )
-                  : Text(subtitle ?? "", style: subtitleStyle),
+                  : ExpandCollapseText(
+                    text: subtitle ?? "",
+                    style: subtitleStyle,
+                    collapsedMaxLines: 999,
+                    textAlign: TextAlign.start,
+                  ),
         ),
         actions: actions,
       );

@@ -72,8 +72,11 @@ enum BrowserWebType { web_0, web_1 }
 
 enum BrowserWebVisible { no, yes }
 
+enum WSSSelectImageType { poster, banner }
+
 class WSSSelectModel {
   String title, image, subtitle;
+  WSSSelectImageType imageType = WSSSelectImageType.poster;
   Map<String, dynamic> data;
 
   WSSSelectModel({
@@ -81,12 +84,17 @@ class WSSSelectModel {
     this.subtitle = "",
     this.image = "",
     this.data = const {},
+    this.imageType = WSSSelectImageType.poster,
   });
 
   factory WSSSelectModel.fromMap(Map<String, dynamic> map) => WSSSelectModel(
     title: map["title"] ?? "",
     subtitle: map["subtitle"] ?? "",
     image: map["image"] ?? "",
+    imageType: WSSSelectImageType.values.findEnum(
+      map["image_type"],
+      WSSSelectImageType.poster,
+    ),
     data: MapUtilities.convert<String, dynamic>(map["data"]) ?? {},
   );
 
@@ -94,6 +102,7 @@ class WSSSelectModel {
     "title": title,
     "subtitle": subtitle,
     "image": image,
+    "image_type": imageType.name,
     "data": data,
   };
 }

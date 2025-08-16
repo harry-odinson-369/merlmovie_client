@@ -301,6 +301,13 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
   }
 
+  void _onBroadcastClosed(dynamic _) {
+    var pos = controller?.value.position;
+    Future.delayed(const Duration(seconds: 1), () {
+      onBroadcastClicked(false, pos);
+    });
+  }
+
   Future<bool> changeQuality(
     QualityItem quality, {
     bool showError = false,
@@ -320,6 +327,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
           CastClientController.instance.status.addListener(_castListener);
           bool isLoaded = await CastClientController.instance.start(quality);
           CastClientController.instance.seek(pos ?? position);
+          CastClientController.instance.onClosed?.listen(_onBroadcastClosed);
           isInitializing.value = false;
           hideControls.value = true;
           createAutoAd();
@@ -982,7 +990,8 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
                               preventHideControls: preventHideControls,
                               onSimilarChanged: onSimilarChanged,
                               onPlaybackSpeedChanged: onPlaybackSpeedChanged,
-                              onEditSubtitleThemeClicked: onEditSubtitleThemeClicked,
+                              onEditSubtitleThemeClicked:
+                                  onEditSubtitleThemeClicked,
                               onBroadcastClicked: onBroadcastClicked,
                             ),
                           ],

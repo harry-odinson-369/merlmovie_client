@@ -26,7 +26,7 @@ import 'package:merlmovie_client/src/widgets/browser.dart';
 import 'package:merlmovie_client/src/widgets/player.dart';
 import 'package:merlmovie_client/src/widgets/webview.dart';
 import 'package:merlmovie_client/src/widgets/webview_player.dart';
-import 'package:merlmovie_client/src/widgets/wss_select_dialog.dart';
+import 'package:merlmovie_client/src/widgets/wss_select_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -187,7 +187,7 @@ class MerlMovieClient {
               wss.visible,
             );
           } else if (wss.action == WSSAction.select) {
-            WSSSelectModel? selected = await showWSSSelectDialog(
+            WSSSelectModel? selected = await showWSSSelectSheet(
               List<WSSSelectModel>.from(
                 (wss.data["items"] ?? []).map((e) {
                   return WSSSelectModel.fromMap(e);
@@ -204,7 +204,7 @@ class MerlMovieClient {
         } catch (_) {}
       }
 
-      socket?.message?.listen(handler);
+      socket?.onMessage?.listen(handler);
 
       final mediaInfo = {
         "media_type": embed.type,

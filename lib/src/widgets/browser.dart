@@ -62,7 +62,7 @@ class BrowserWidget extends StatefulWidget {
   ) async {
     final id = uniqueId;
     Completer<bool> completer = Completer<bool>();
-    StreamSubscription<dynamic>? subscription = socket?.message?.listen((
+    StreamSubscription<dynamic>? subscription = socket?.onMessage?.listen((
       event,
     ) {
       final decoded = json.decode(event.toString());
@@ -149,7 +149,9 @@ class _BrowserWidgetState extends State<BrowserWidget> {
               : NavigationDecision.prevent;
         },
         onProgress: (progress) async {
-          var url = await controller0?.runJavaScriptReturningResult("window.location.href");
+          var url = await controller0?.runJavaScriptReturningResult(
+            "window.location.href",
+          );
           onWebProgress(progress.toDouble(), url.toString());
         },
         onPageFinished: (url) => onWebProgress(100, url),
@@ -239,7 +241,7 @@ class _BrowserWidgetState extends State<BrowserWidget> {
     if (widget.info.type == BrowserWebType.web_0) {
       initializeWeb0();
     }
-    subscription = widget.socket?.message?.listen(onMessage);
+    subscription = widget.socket?.onMessage?.listen(onMessage);
   }
 
   @override

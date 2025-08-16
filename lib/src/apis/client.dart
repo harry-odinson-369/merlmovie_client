@@ -33,6 +33,10 @@ class CastClientController {
 
   SocketController? _controller;
 
+  Stream<dynamic>? get onMessage => _controller?.onMessage;
+  Stream<dynamic>? get onError => _controller?.onError;
+  Stream<dynamic>? get onClosed => _controller?.onClosed;
+
   final ValueNotifier<bool> _isConnected = ValueNotifier(false);
   ValueNotifier<bool> get isConnected => _isConnected;
 
@@ -63,8 +67,9 @@ class CastClientController {
           _controller = results[index];
           _castDeviceInfo = await _connectToDevice(_controller!);
           _isConnected.value = _castDeviceInfo != null;
-          _controller?.message?.listen(_onStatusChanged);
-          _controller?.message?.handleError(_onError);
+          _controller?.onMessage?.listen(_onStatusChanged);
+          _controller?.onError?.listen(_onError);
+          _controller?.onClosed?.listen(_onClosed);
           hostname = [...split, "${index + 1}"].join(".");
           break;
         }
@@ -159,7 +164,7 @@ class CastClientController {
   Future<bool> start(QualityItem quality) async {
     Completer<bool> completer = Completer<bool>();
     _status.value = VideoPlayerValueModel.fromMap({});
-    _controller?.message?.listen((event) {
+    _controller?.onMessage?.listen((event) {
       var msg = ServerAction.fromMap(json.decode(event.toString()));
       if (msg.action == ActionServer.video_loaded) {
         completer.finish(true);
@@ -256,17 +261,17 @@ class CastClientController {
   }
 
   void _onStatusChanged(dynamic event) {
-    if (event.toString() == "closed") {
-      disconnect();
-      return;
-    }
     var msg = ServerAction.fromMap(json.decode(event.toString()));
     if (msg.action == ActionServer.status) {
       _status.value = VideoPlayerValueModel.fromMap(msg.payload);
     }
   }
 
-  void _onError(Object err) {
+  void _onClosed(dynamic _) {
+    disconnect();
+  }
+
+  void _onError(dynamic err) {
     _isConnected.value = false;
     _castDeviceInfo = null;
     _controller?.close();
@@ -275,7 +280,7 @@ class CastClientController {
 
   Future<CastDeviceInfo> _connectToDevice(SocketController socket) async {
     Completer<CastDeviceInfo> completer = Completer();
-    socket.message?.listen((event) {
+    socket.onMessage?.listen((event) {
       var msg = ServerAction.fromMap(json.decode(event.toString()));
       if (msg.action == ActionServer.connected) {
         completer.finish(CastDeviceInfo.fromMap(msg.payload));

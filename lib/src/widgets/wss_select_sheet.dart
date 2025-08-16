@@ -5,22 +5,25 @@ import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/models/wss.dart';
 
-Future<WSSSelectModel?> showWSSSelectDialog(List<WSSSelectModel> items) {
+Future<WSSSelectModel?> showWSSSelectSheet(List<WSSSelectModel> items) {
   return showModalBottomSheet<WSSSelectModel>(
     context: NavigatorKey.currentContext!,
     isScrollControlled: true,
-    builder: (context) => WSSSelectDialog(items: items),
+    builder: (context) => WSSSelectSheet(items: items),
   );
 }
 
-class WSSSelectDialog extends StatelessWidget {
+class WSSSelectSheet extends StatelessWidget {
   final List<WSSSelectModel> items;
-  const WSSSelectDialog({super.key, required this.items});
+  const WSSSelectSheet({super.key, required this.items});
 
   @override
   Widget build(BuildContext context) {
+    bool isAllBanner = items.every(
+      (e) => e.imageType == WSSSelectImageType.banner,
+    );
     return Container(
-      width: context.maxMobileWidth,
+      width: context.maxMobileWidth + (isAllBanner ? 74 : 0),
       constraints: BoxConstraints(maxHeight: context.screen.height * .9),
       decoration: BoxDecoration(
         color: Colors.grey.shade900,
@@ -73,6 +76,7 @@ class WSSSelectDialog extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 12),
               children: [
                 ...items.build((e, index) {
+                  bool isBanner = e.imageType == WSSSelectImageType.banner;
                   return InkWell(
                     onTap: () {
                       Navigator.of(context).pop(e);
@@ -90,8 +94,8 @@ class WSSSelectDialog extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                               child: CachedNetworkImage(
                                 imageUrl: e.image,
-                                width: 98,
-                                height: 144,
+                                width: isBanner ? 172 : 98,
+                                height: isBanner ? 98 : 144,
                                 fit: BoxFit.cover,
                               ),
                             ),
