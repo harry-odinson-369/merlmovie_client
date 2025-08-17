@@ -40,7 +40,8 @@ class MerlMovieClient {
   static bool get isPlayerActive => NavigatorKey.isPlayerActive;
 
   static String? get interstitialAdUnitId => _adUnitId;
-  static Duration get interstitialAdInterval => _adInterval ?? Duration(minutes: 15);
+  static Duration get interstitialAdInterval =>
+      _adInterval ?? Duration(minutes: 15);
 
   static void setAdConfig({String? adUnitId, Duration? adInterval}) {
     _adUnitId = adUnitId ?? _adUnitId;
@@ -77,7 +78,9 @@ class MerlMovieClient {
   }) async {
     Response response;
 
-    MerlMovieClientLogger.logMsg("Requesting to target ${embed.request_url}...");
+    MerlMovieClientLogger.logMsg(
+      "Requesting to target ${embed.request_url}...",
+    );
 
     String requestUrl = await InformationHelper.requestUrlWithXCI(
       embed.request_url,
@@ -121,7 +124,9 @@ class MerlMovieClient {
           MerlMovieClientLogger.logMsg(msg);
         }
       } catch (err) {
-        MerlMovieClientLogger.logMsg("Error! cannot get direct link at the moment.");
+        MerlMovieClientLogger.logMsg(
+          "Error! cannot get direct link at the moment.",
+        );
         onError?.call(500, "Cannot get direct link! unexpected error.");
       }
     }
@@ -144,7 +149,9 @@ class MerlMovieClient {
         );
       }
 
-      MerlMovieClientLogger.logMsg("Request using websocket. ready to communicate.");
+      MerlMovieClientLogger.logMsg(
+        "Request using websocket. ready to communicate.",
+      );
 
       void handler(dynamic event) async {
         try {

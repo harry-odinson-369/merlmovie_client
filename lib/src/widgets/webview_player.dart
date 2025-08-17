@@ -12,6 +12,7 @@ import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
 import 'package:merlmovie_client/src/extensions/uri.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
+import 'package:merlmovie_client/src/helpers/generate.dart';
 import 'package:merlmovie_client/src/helpers/proxy.dart';
 import 'package:merlmovie_client/src/helpers/themoviedb.dart';
 import 'package:merlmovie_client/src/merlmovie_client.dart';
@@ -28,6 +29,7 @@ import 'package:merlmovie_client/src/widgets/player_select_similar_sheet.dart';
 import 'package:merlmovie_client/src/widgets/prompt_dialog.dart';
 import 'package:merlmovie_client/src/widgets/webview.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -79,6 +81,8 @@ class _MerlMovieClientWebViewPlayerState
   Timer? _hideBarButtonsTimer;
 
   VideoAdController? _adController;
+  VideoPlayerController? _fakeVideoController;
+  Timer? _fakeVideoTimer;
 
   Future createWebViewFlutterController() async {
     if (Platform.isIOS) {
@@ -133,6 +137,8 @@ class _MerlMovieClientWebViewPlayerState
   void update() => mounted ? setState(() {}) : () {};
 
   void onWebRequestProgress(double prog) {
+    _fakeVideoTimer?.cancel();
+    _fakeVideoTimer = null;
     webProgress = prog;
     update();
     if (prog >= 100) {
@@ -143,6 +149,23 @@ class _MerlMovieClientWebViewPlayerState
         update();
         createAutoAd();
         Future.delayed(const Duration(seconds: 1), () {
+          _fakeVideoTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+            var pos = GenerateHelper.random(1, 999999);
+            _fakeVideoController?.value = VideoPlayerValue(
+              duration: Duration(minutes: 180),
+              isPlaying: true,
+              isBuffering: false,
+              size: Size(1, 1),
+              position: Duration(seconds: pos),
+              buffered: [
+                DurationRange(
+                  Duration(seconds: pos),
+                  Duration(seconds: pos + 30),
+                ),
+              ],
+              isInitialized: true,
+            );
+          });
           if (widget.embed.plugin.script.isNotEmpty) {
             webViewFlutterController?.runJavaScript(widget.embed.plugin.script);
           }
@@ -156,9 +179,14 @@ class _MerlMovieClientWebViewPlayerState
 
   void createAutoAd() {
     if (MerlMovieClient.interstitialAdUnitId != null) {
-      _adController = VideoAdController.periodic(
+      _fakeVideoController = VideoPlayerController.networkUrl(
+        Uri.parse("https://example.com"),
+      );
+      update();
+      _adController = VideoAdController(
         adUnitId: MerlMovieClient.interstitialAdUnitId!,
         interval: MerlMovieClient.interstitialAdInterval,
+        controller: _fakeVideoController,
       )..start();
     }
   }
@@ -169,6 +197,8 @@ class _MerlMovieClientWebViewPlayerState
   Future<bool> askToExit() async {
     bool accepted = await showPromptDialog(
       title: "Are you want to exit this page?",
+      backgroundColor: Colors.grey.shade800,
+      cupertinoBrightness: Brightness.dark,
       titleStyle: context.theme.textTheme.titleLarge?.copyWith(
         color: Colors.white,
       ),
@@ -377,7 +407,7 @@ class _MerlMovieClientWebViewPlayerState
       MerlMovieClientPlayer.restoreDeviceOrientationAndSystemUI(
         widget.onDisposedDeviceOrientations,
       );
-      WakelockPlus.disable();
+      WakelockPlus.disable().catchError((er) {});
       Future.delayed(const Duration(milliseconds: 500), () {
         if (NavigatorKey.currentContext != null) {
           Provider.of<PlayerStateProvider>(
@@ -389,8 +419,16 @@ class _MerlMovieClientWebViewPlayerState
     }
     _adController?.dispose();
     _adController = null;
-    webViewFlutterController?.setNavigationDelegate(NavigationDelegate());
-    webViewFlutterController?.loadRequest(Uri.parse("about:blank"));
+    _fakeVideoTimer?.cancel();
+    _fakeVideoTimer = null;
+    _fakeVideoController?.dispose().catchError((er) {});
+    _fakeVideoController = null;
+    webViewFlutterController
+        ?.setNavigationDelegate(NavigationDelegate())
+        .catchError((er) {});
+    webViewFlutterController
+        ?.loadRequest(Uri.parse("about:blank"))
+        .catchError((er) {});
     webViewFlutterController = null;
     popup_links.clear();
     _webProgressTimer?.cancel();
