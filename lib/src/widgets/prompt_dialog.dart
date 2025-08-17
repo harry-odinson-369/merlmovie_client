@@ -123,18 +123,22 @@ class PromptDialog extends StatelessWidget {
     ];
 
     if (Platform.isIOS) {
-      return CupertinoAlertDialog(
-        title: Text(title, style: titleStyle),
-        content:
-            subtitle == null
-                ? null
-                : ExpandCollapseText(
-                  text: subtitle ?? "",
-                  style: subtitleStyle,
-                  collapsedMaxLines: 999,
-                  textAlign: TextAlign.start,
-                ),
-        actions: actions,
+      return CupertinoTheme(
+        data: CupertinoThemeData(barBackgroundColor: backgroundColor),
+        child: CupertinoAlertDialog(
+          title: Text(title, style: titleStyle),
+          content:
+              subtitle == null
+                  ? null
+                  : ExpandCollapseText(
+                    text: subtitle ?? "",
+                    style: subtitleStyle,
+                    linkStyle: subtitleStyle?.copyWith(color: Colors.blue),
+                    collapsedMaxLines: 999,
+                    textAlign: TextAlign.start,
+                  ),
+          actions: actions,
+        ),
       );
     } else {
       return AlertDialog(
@@ -150,6 +154,7 @@ class PromptDialog extends StatelessWidget {
                     child: ExpandCollapseText(
                       text: subtitle ?? "",
                       style: subtitleStyle,
+                      linkStyle: subtitleStyle?.copyWith(color: Colors.blue),
                       textAlign: TextAlign.start,
                       collapsedMaxLines: 999,
                     ),
@@ -157,6 +162,7 @@ class PromptDialog extends StatelessWidget {
                   : ExpandCollapseText(
                     text: subtitle ?? "",
                     style: subtitleStyle,
+                    linkStyle: subtitleStyle?.copyWith(color: Colors.blue),
                     collapsedMaxLines: 999,
                     textAlign: TextAlign.start,
                   ),

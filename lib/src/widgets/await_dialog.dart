@@ -11,6 +11,8 @@ Future<T?> showAwaitingDialog<T>(
   Future<T> Function() function, {
   String label = "Please wait...",
   bool dismissible = true,
+  Color? backgroundColor,
+  Color? labelColor,
 }) {
   if (Platform.isIOS) {
     return showCupertinoDialog<T>(
@@ -21,6 +23,8 @@ Future<T?> showAwaitingDialog<T>(
             function: function,
             label: label,
             dismissible: dismissible,
+            backgroundColor: backgroundColor,
+            labelColor: labelColor,
           ),
     );
   }
@@ -32,6 +36,8 @@ Future<T?> showAwaitingDialog<T>(
           function: function,
           label: label,
           dismissible: dismissible,
+          labelColor: labelColor,
+          backgroundColor: backgroundColor,
         ),
   );
 }
@@ -40,11 +46,15 @@ class AwaitingDialog extends StatefulWidget {
   final String label;
   final Future Function() function;
   final bool dismissible;
+  final Color? backgroundColor;
+  final Color? labelColor;
   const AwaitingDialog({
     super.key,
     required this.function,
     this.label = "Please wait...",
     this.dismissible = true,
+    this.backgroundColor,
+    this.labelColor,
   });
 
   @override
@@ -68,25 +78,34 @@ class _AwaitingDialogState extends State<AwaitingDialog> {
       child: Builder(
         builder: (context) {
           if (Platform.isIOS) {
-            return CupertinoAlertDialog(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CupertinoActivityIndicator(radius: 16),
-                  SizedBox(height: 12),
-                  Text(
-                    widget.label,
-                    style: context.theme.textTheme.titleMedium?.copyWith(
-                      color: context.theme.textTheme.titleMedium?.color
-                          ?.withOpacity(.8),
+            return CupertinoTheme(
+              data: CupertinoThemeData(
+                barBackgroundColor: widget.backgroundColor,
+              ),
+              child: CupertinoAlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CupertinoActivityIndicator(
+                      radius: 16,
+                      color: widget.labelColor,
                     ),
-                  ),
-                ],
+                    SizedBox(height: 12),
+                    Text(
+                      widget.label,
+                      style: context.theme.textTheme.titleMedium?.copyWith(
+                        color: (widget.labelColor ??
+                                context.theme.textTheme.titleMedium?.color)
+                            ?.withOpacity(.8),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           } else {
             return AlertDialog(
-              backgroundColor: Colors.grey.shade800,
+              backgroundColor: widget.backgroundColor ?? Colors.grey.shade800,
               actionsPadding: EdgeInsets.zero,
               contentPadding: EdgeInsets.symmetric(
                 vertical: 12,
@@ -96,13 +115,17 @@ class _AwaitingDialogState extends State<AwaitingDialog> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircularProgressIndicator(
-                    color: context.theme.textTheme.titleMedium?.color,
+                    color:
+                        widget.labelColor ??
+                        context.theme.textTheme.titleMedium?.color,
                     strokeWidth: 3,
                   ),
                   SizedBox(width: 16),
                   Text(
                     widget.label,
-                    style: context.theme.textTheme.titleMedium,
+                    style: context.theme.textTheme.titleMedium?.copyWith(
+                      color: widget.labelColor,
+                    ),
                   ),
                 ],
               ),

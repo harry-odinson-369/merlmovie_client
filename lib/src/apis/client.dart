@@ -81,11 +81,21 @@ class CastClientController {
     String? notice,
     List<Widget>? noticeButtons,
     bool showOnError = false,
+    TextStyle? titleStyle,
+    TextStyle? subtitleStyle,
+    Color? backgroundColor,
+    TextStyle? negativeButtonTextStyle,
+    TextStyle? positiveButtonTextStyle,
   }) async {
     if (isConnected.value) {
       bool ok = await showPromptDialog(
         title:
             "Are you want to disconnect from ${_castDeviceInfo?.deviceName ?? "Broadcast"}?",
+        backgroundColor: backgroundColor,
+        titleStyle: titleStyle,
+        subtitleStyle: subtitleStyle,
+        positiveButtonTextStyle: positiveButtonTextStyle,
+        negativeButtonTextStyle: negativeButtonTextStyle,
       );
       if (ok) {
         await disconnect();
@@ -100,14 +110,15 @@ class CastClientController {
           context: NavigatorKey.currentContext!,
           builder: (context) {
             return AlertDialog(
-              backgroundColor: Colors.grey.shade800,
-              title: Text("Notice"),
+              backgroundColor: backgroundColor ?? Colors.grey.shade800,
+              title: Text("Notice", style: titleStyle),
               content: SizedBox(
                 width: context.maxMobileWidth,
                 child: ExpandCollapseText(
                   text: this.notice!,
                   collapsedMaxLines: 15,
                   textAlign: TextAlign.start,
+                  style: subtitleStyle,
                 ),
               ),
               actions:
@@ -117,7 +128,9 @@ class CastClientController {
                       onPressed: () => Navigator.of(context).pop(),
                       child: Text(
                         "OK",
-                        style: context.theme.textTheme.titleMedium,
+                        style:
+                            positiveButtonTextStyle ??
+                            context.theme.textTheme.titleMedium,
                       ),
                     ),
                   ],
@@ -129,14 +142,24 @@ class CastClientController {
         title: "Are you want to broadcast to TV?",
       );
       if (ok) {
-        await showAwaitingDialog(connect, label: "Connecting...");
+        await showAwaitingDialog(
+          connect,
+          label: "Connecting...",
+          backgroundColor: backgroundColor,
+          labelColor: subtitleStyle?.color,
+        );
         if (showOnError) {
           if (_isConnected.value == false) {
             await showPromptDialog(
               title: "Error",
               subtitle:
-                  "We couldn't find the Media Receiver on your local network! Please make sure your phone and TV are connected to the same Wi-Fi network, and ensure the [Media Receiver](https://play.google.com/store/apps/details?id=com.NOUVANNET.scanner) app is open on your TV.",
+                  "We couldn't find the [Media Receiver](https://play.google.com/store/apps/details?id=com.NOUVANNET.scanner) on your local network! Please make sure your phone and TV are connected to the same Wi-Fi network, and ensure the [Media Receiver](https://play.google.com/store/apps/details?id=com.NOUVANNET.scanner) app is open on your TV.",
               button: PromptDialogButton.ok,
+              backgroundColor: backgroundColor,
+              titleStyle: titleStyle,
+              subtitleStyle: subtitleStyle,
+              positiveButtonTextStyle: positiveButtonTextStyle,
+              negativeButtonTextStyle: negativeButtonTextStyle,
             );
           }
         }
