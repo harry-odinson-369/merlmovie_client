@@ -2,6 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:video_player/video_player.dart';
 import 'package:merlmovie_client/src/apis/client.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
@@ -251,6 +252,20 @@ class PlayerBottomControls extends StatelessWidget {
               Duration? pos = controller?.value.position;
               bool? connect = await CastClientController.instance.toggleConnect(
                 showOnError: true,
+                cupertinoBrightness: Brightness.dark,
+                backgroundColor: Colors.grey.shade800,
+                subtitleStyle: context.theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white.withOpacity(.8),
+                ),
+                titleStyle: context.theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                ),
+                negativeButtonTextStyle: context.theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white.withOpacity(.7),
+                ),
+                positiveButtonTextStyle: context.theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                ),
               );
               if (connect != null && connect != pre) {
                 onBroadcastClicked?.call(connect, pos);

@@ -686,7 +686,12 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     assert(TheMovieDbApi.api_keys.isNotEmpty, "The TMDb Api keys must be set.");
     if (widget.onRequestDetail != null) {
       Future<DetailModel> future() => widget.onRequestDetail!(movie);
-      var detail = await showAwaitingDialog<DetailModel>(future);
+      var detail = await showAwaitingDialog<DetailModel>(
+        future,
+        labelColor: Colors.white,
+        cupertinoBrightness: Brightness.dark,
+        backgroundColor: Colors.grey.shade800,
+      );
       if (detail != null) {
         if (detail.type == "tv" && detail.seasons.isNotEmpty) {
           Episode? episode = await showModalBottomSheet(
@@ -748,6 +753,8 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   Future<bool> askToExit() async {
     bool accepted = await showPromptDialog(
       title: "Are you want to exit this page?",
+      backgroundColor: Colors.grey.shade800,
+      cupertinoBrightness: Brightness.dark,
       titleStyle: context.theme.textTheme.titleLarge?.copyWith(
         color: Colors.white,
       ),
@@ -800,7 +807,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       MerlMovieClientPlayer.restoreDeviceOrientationAndSystemUI(
         widget.onDisposedDeviceOrientations,
       );
-      WakelockPlus.disable();
+      WakelockPlus.disable().catchError((er) {});
       Future.delayed(const Duration(milliseconds: 500), () {
         if (NavigatorKey.currentContext != null) {
           Provider.of<PlayerStateProvider>(

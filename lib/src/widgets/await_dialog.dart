@@ -12,6 +12,7 @@ Future<T?> showAwaitingDialog<T>(
   String label = "Please wait...",
   bool dismissible = true,
   Color? backgroundColor,
+  Brightness? cupertinoBrightness,
   Color? labelColor,
 }) {
   if (Platform.isIOS) {
@@ -25,6 +26,7 @@ Future<T?> showAwaitingDialog<T>(
             dismissible: dismissible,
             backgroundColor: backgroundColor,
             labelColor: labelColor,
+            cupertinoBrightness: cupertinoBrightness,
           ),
     );
   }
@@ -38,6 +40,7 @@ Future<T?> showAwaitingDialog<T>(
           dismissible: dismissible,
           labelColor: labelColor,
           backgroundColor: backgroundColor,
+          cupertinoBrightness: cupertinoBrightness,
         ),
   );
 }
@@ -48,6 +51,7 @@ class AwaitingDialog extends StatefulWidget {
   final bool dismissible;
   final Color? backgroundColor;
   final Color? labelColor;
+  final Brightness? cupertinoBrightness;
   const AwaitingDialog({
     super.key,
     required this.function,
@@ -55,6 +59,7 @@ class AwaitingDialog extends StatefulWidget {
     this.dismissible = true,
     this.backgroundColor,
     this.labelColor,
+    this.cupertinoBrightness,
   });
 
   @override
@@ -79,9 +84,7 @@ class _AwaitingDialogState extends State<AwaitingDialog> {
         builder: (context) {
           if (Platform.isIOS) {
             return CupertinoTheme(
-              data: CupertinoThemeData(
-                barBackgroundColor: widget.backgroundColor,
-              ),
+              data: CupertinoThemeData(brightness: widget.cupertinoBrightness),
               child: CupertinoAlertDialog(
                 content: Column(
                   mainAxisSize: MainAxisSize.min,

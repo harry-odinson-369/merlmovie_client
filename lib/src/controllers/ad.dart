@@ -11,18 +11,6 @@ class VideoAdController {
     this.interval = const Duration(minutes: 15),
   });
 
-  VideoAdController.periodic({
-    required this.adUnitId,
-    this.interval = const Duration(minutes: 15),
-    bool isShowImmediately = true,
-  }) {
-    _isPeriodic = true;
-    _isPeriodicShowImmediately = isShowImmediately;
-  }
-
-  bool _isPeriodicShowImmediately = true;
-  bool _isPeriodic = false;
-
   VideoPlayerController? controller;
 
   String adUnitId;
@@ -36,7 +24,7 @@ class VideoAdController {
   Timer? _timer;
 
   void start() {
-    if (!_isPeriodic) controller?.addListener(_playerListener);
+    controller?.addListener(_playerListener);
     _timer = _createNewTimer();
   }
 
@@ -76,19 +64,7 @@ class VideoAdController {
   Timer _createNewTimer() {
     _timer?.cancel();
     _timer = null;
-    if (_isPeriodic) {
-      return Timer.periodic(interval, (timer) {
-        if (!isShowing) {
-          if (_isPeriodicShowImmediately) {
-            show();
-          } else {
-            isCooldown = false;
-          }
-        }
-      });
-    } else {
-      return Timer(interval, () => isCooldown = false);
-    }
+    return Timer(interval, () => isCooldown = false);
   }
 
   Future<InterstitialAd?> _requestAd() async {

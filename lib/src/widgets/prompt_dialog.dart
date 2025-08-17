@@ -17,6 +17,7 @@ Future<bool> showPromptDialog({
   TextStyle? titleStyle,
   TextStyle? subtitleStyle,
   Color? backgroundColor,
+  Brightness? cupertinoBrightness,
   bool scrollableSubtitle = false,
   TextStyle? negativeButtonTextStyle,
   TextStyle? positiveButtonTextStyle,
@@ -32,6 +33,7 @@ Future<bool> showPromptDialog({
         subtitleStyle: subtitleStyle,
         scrollableSubtitle: scrollableSubtitle,
         backgroundColor: backgroundColor,
+        cupertinoBrightness: cupertinoBrightness,
         negativeButtonTextStyle: negativeButtonTextStyle,
         positiveButtonTextStyle: positiveButtonTextStyle,
       );
@@ -48,6 +50,7 @@ class PromptDialog extends StatelessWidget {
   final TextStyle? titleStyle;
   final TextStyle? subtitleStyle;
   final Color? backgroundColor;
+  final Brightness? cupertinoBrightness;
   final bool scrollableSubtitle;
   final TextStyle? negativeButtonTextStyle;
   final TextStyle? positiveButtonTextStyle;
@@ -59,6 +62,7 @@ class PromptDialog extends StatelessWidget {
     this.titleStyle,
     this.subtitleStyle,
     this.backgroundColor,
+    this.cupertinoBrightness,
     this.scrollableSubtitle = false,
     this.negativeButtonTextStyle,
     this.positiveButtonTextStyle,
@@ -124,7 +128,7 @@ class PromptDialog extends StatelessWidget {
 
     if (Platform.isIOS) {
       return CupertinoTheme(
-        data: CupertinoThemeData(barBackgroundColor: backgroundColor),
+        data: CupertinoThemeData(brightness: cupertinoBrightness),
         child: CupertinoAlertDialog(
           title: Text(title, style: titleStyle),
           content:

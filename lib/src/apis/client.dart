@@ -84,6 +84,7 @@ class CastClientController {
     TextStyle? titleStyle,
     TextStyle? subtitleStyle,
     Color? backgroundColor,
+    Brightness? cupertinoBrightness,
     TextStyle? negativeButtonTextStyle,
     TextStyle? positiveButtonTextStyle,
   }) async {
@@ -96,6 +97,7 @@ class CastClientController {
         subtitleStyle: subtitleStyle,
         positiveButtonTextStyle: positiveButtonTextStyle,
         negativeButtonTextStyle: negativeButtonTextStyle,
+        cupertinoBrightness: cupertinoBrightness,
       );
       if (ok) {
         await disconnect();
@@ -140,6 +142,12 @@ class CastClientController {
       }
       bool ok = await showPromptDialog(
         title: "Are you want to broadcast to TV?",
+        cupertinoBrightness: cupertinoBrightness,
+        backgroundColor: backgroundColor,
+        titleStyle: titleStyle,
+        subtitleStyle: subtitleStyle,
+        positiveButtonTextStyle: positiveButtonTextStyle,
+        negativeButtonTextStyle: negativeButtonTextStyle,
       );
       if (ok) {
         await showAwaitingDialog(
@@ -147,6 +155,7 @@ class CastClientController {
           label: "Connecting...",
           backgroundColor: backgroundColor,
           labelColor: subtitleStyle?.color,
+          cupertinoBrightness: cupertinoBrightness,
         );
         if (showOnError) {
           if (_isConnected.value == false) {
@@ -160,6 +169,7 @@ class CastClientController {
               subtitleStyle: subtitleStyle,
               positiveButtonTextStyle: positiveButtonTextStyle,
               negativeButtonTextStyle: negativeButtonTextStyle,
+              cupertinoBrightness: cupertinoBrightness,
             );
           }
         }

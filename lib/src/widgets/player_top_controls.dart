@@ -28,6 +28,8 @@ class PlayerTopControls extends StatelessWidget {
   static Future pop(BuildContext context) async {
     bool isPop = await showPromptDialog(
       title: "Are you want to exit?",
+      backgroundColor: Colors.grey.shade800,
+      cupertinoBrightness: Brightness.dark,
       titleStyle: context.theme.textTheme.titleLarge?.copyWith(
         color: Colors.white,
       ),
