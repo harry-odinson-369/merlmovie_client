@@ -434,9 +434,11 @@ class MerlMovieClient {
           },
         );
         if (pushReplacement) {
-          Navigator.of(NavigatorKey.currentContext!).pushReplacement(route);
+          return await Navigator.of(
+            NavigatorKey.currentContext!,
+          ).pushReplacement(route);
         } else {
-          Navigator.of(NavigatorKey.currentContext!).push(route);
+          return await Navigator.of(NavigatorKey.currentContext!).push(route);
         }
       }
     } else if (embed.plugin.openType == PluginOpenType.webview) {
