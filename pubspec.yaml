@@ -15,10 +15,10 @@ dependencies:
   device_info_plus: ^11.3.3
   http: ^1.2.1
   package_info_plus: ^8.0.0
-  flutter_inappwebview: ^6.1.2
   webview_flutter: ^4.13.0
   webview_flutter_wkwebview: ^3.18.2
   webview_flutter_android: ^4.3.2
+  webview_cookie_manager_plus: ^2.0.16
   provider: ^6.1.5
   shared_preferences: ^2.5.3
   flutter_svg: ^2.1.0

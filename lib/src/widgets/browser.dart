@@ -4,7 +4,8 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:webview_cookie_manager_plus/webview_cookie_manager_plus.dart'
+    as wcmp;
 import 'package:merlmovie_client/src/controllers/socket.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
@@ -33,20 +34,19 @@ class BrowserWidget extends StatefulWidget {
   });
 
   static Future<String> getCookie(String url) async {
-    final cookieManager = CookieManager();
-    final cookies = await cookieManager.getCookies(url: WebUri(url));
+    final cookieManager = wcmp.WebviewCookieManager();
+    final cookies = await cookieManager.getCookies(url);
     return cookies.map((e) => "${e.name}=${e.value}").toList().join("; ");
   }
 
   static Future setCookie(String url, String cookie) async {
-    final cookieManager = CookieManager();
-    for (final co in cookie.split("; ")) {
-      await cookieManager.setCookie(
-        url: WebUri(url),
-        name: co.split("=")[0],
-        value: co.split("=")[1],
-      );
-    }
+    final cookieManager = wcmp.WebviewCookieManager();
+    await cookieManager.setCookies(
+      cookie.split("; ").map((co) {
+        return Cookie(co.split("=")[0], co.split("=")[1]);
+      }).toList(),
+      origin: url,
+    );
   }
 
   static String get uniqueId {
@@ -109,7 +109,6 @@ class BrowserWidget extends StatefulWidget {
 
 class _BrowserWidgetState extends State<BrowserWidget> {
   WebViewController? controller0;
-  InAppWebViewController? controller1;
 
   StreamSubscription<dynamic>? subscription;
 
@@ -166,13 +165,8 @@ class _BrowserWidgetState extends State<BrowserWidget> {
 
   Future<String> evaluate(String script) async {
     try {
-      if (widget.info.type == BrowserWebType.web_0) {
-        final result = await controller0?.runJavaScriptReturningResult(script);
-        return result.toString();
-      } else {
-        final result = await controller1?.evaluateJavascript(source: script);
-        return result.toString();
-      }
+      final result = await controller0?.runJavaScriptReturningResult(script);
+      return result.toString();
     } catch (_) {
       return "";
     }
@@ -192,11 +186,7 @@ class _BrowserWidgetState extends State<BrowserWidget> {
         __xele__.dispatchEvent(__xeve);
       }
     """;
-    if (widget.info.type == BrowserWebType.web_0) {
-      controller0?.runJavaScript(script);
-    } else {
-      controller1?.evaluateJavascript(source: script);
-    }
+    controller0?.runJavaScript(script);
   }
 
   void onMessage(dynamic event) async {
@@ -238,9 +228,7 @@ class _BrowserWidgetState extends State<BrowserWidget> {
   void initState() {
     super.initState();
     MerlMovieClientLogger.logMsg("[Browser] Spawning new instance...");
-    if (widget.info.type == BrowserWebType.web_0) {
-      initializeWeb0();
-    }
+    initializeWeb0();
     subscription = widget.socket?.onMessage?.listen(onMessage);
   }
 
@@ -250,7 +238,6 @@ class _BrowserWidgetState extends State<BrowserWidget> {
     controller0?.setNavigationDelegate(NavigationDelegate());
     controller0?.loadRequest(Uri.parse("about:blank"));
     controller0 = null;
-    controller1?.dispose();
     subscription?.cancel();
     subscription = null;
     MerlMovieClientLogger.logMsg("[Browser] Instance closed!");
@@ -270,55 +257,6 @@ class _BrowserWidgetState extends State<BrowserWidget> {
               height: context.screen.height,
               width: context.screen.width,
               child: WebViewWidget(controller: controller0!),
-            ),
-          ),
-        if (widget.info.type == BrowserWebType.web_1)
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            top: 0,
-            child: SizedBox(
-              height: context.screen.height,
-              width: context.screen.width,
-              child: InAppWebView(
-                onWebViewCreated: (controller) {
-                  controller1 = controller;
-                  if (mounted) setState(() {});
-                },
-                initialUrlRequest: URLRequest(
-                  url: WebUri(widget.info.url),
-                  headers: widget.info.headers,
-                ),
-                initialSettings: InAppWebViewSettings(
-                  allowsInlineMediaPlayback: true,
-                  javaScriptEnabled: true,
-                  mediaPlaybackRequiresUserGesture: true,
-                  isInspectable: false,
-                  allowBackgroundAudioPlaying: false,
-                  useShouldOverrideUrlLoading: true,
-                  useHybridComposition: true,
-                ),
-                shouldOverrideUrlLoading: (controller, navigationAction) async {
-                  bool isAllow = await widget.onNavigationRequest(
-                    navigationAction.request.url.toString(),
-                    navigationAction.isForMainFrame,
-                  );
-                  return isAllow
-                      ? NavigationActionPolicy.ALLOW
-                      : NavigationActionPolicy.CANCEL;
-                },
-                onProgressChanged: (controller, progress) async {
-                  var url = await controller.evaluateJavascript(
-                    source: "window.location.href",
-                  );
-                  onWebProgress(progress.toDouble(), url.toString());
-                },
-                onLoadStop: (controller, url) async {
-                  controller1 = controller;
-                  onWebProgress(100, url.toString());
-                },
-              ),
             ),
           ),
         Positioned(

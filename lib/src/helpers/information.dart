@@ -36,12 +36,16 @@ class InformationHelper {
     return deviceInformation;
   }
 
-  static Future<String> xci(PluginModel plugin) async {
-    String info = json.encode({
+  static Future<Map<String, dynamic>> getClientInfo(PluginModel plugin) async {
+    return {
       "device_info": await deviceInfo,
       "app_info": await appInfo,
       "plugin_info": plugin.toMap(),
-    });
+    };
+  }
+
+  static Future<String> xci(PluginModel plugin) async {
+    String info = json.encode(await getClientInfo(plugin));
     final encoded = base64.encode(utf8.encode(info));
     return encoded;
   }

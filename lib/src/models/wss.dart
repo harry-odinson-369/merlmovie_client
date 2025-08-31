@@ -68,8 +68,6 @@ class WSSDataModel {
       BrowserWebVisible.no;
 }
 
-enum BrowserWebType { web_0, web_1 }
-
 enum BrowserWebVisible { no, yes }
 
 enum WSSSelectImageType { poster, banner }
@@ -108,7 +106,6 @@ class WSSSelectModel {
 }
 
 class WSSBrowserWebDataModel {
-  BrowserWebType type = BrowserWebType.web_0;
   String url;
   Map<String, String>? headers;
   BrowserWebVisible visible = BrowserWebVisible.no;
@@ -116,35 +113,25 @@ class WSSBrowserWebDataModel {
 
   WSSBrowserWebDataModel({
     required this.url,
-    this.type = BrowserWebType.web_0,
     this.headers,
     this.visible = BrowserWebVisible.no,
     this.id,
   });
 
-  factory WSSBrowserWebDataModel.fromMap(
-    Map<String, dynamic> map,
-  ) => WSSBrowserWebDataModel(
-    url: map["url"] ?? "",
-    headers: MapUtilities.convert<String, String>(map["headers"]),
-    type:
-        BrowserWebType.values.firstWhereOrNull(
-          (e) => e.name.toLowerCase() == map["type"].toString().toLowerCase(),
-        ) ??
-        BrowserWebType.web_0,
-    visible:
-        BrowserWebVisible.values.firstWhereOrNull(
-          (e) =>
-              e.name.toLowerCase() == map["visible"].toString().toLowerCase(),
-        ) ??
-        BrowserWebVisible.no,
-    id: map["__id"],
-  );
+  factory WSSBrowserWebDataModel.fromMap(Map<String, dynamic> map) =>
+      WSSBrowserWebDataModel(
+        url: map["url"] ?? "",
+        headers: MapUtilities.convert<String, String>(map["headers"]),
+        visible: BrowserWebVisible.values.findEnum(
+          map["visible"],
+          BrowserWebVisible.no,
+        ),
+        id: map["__id"],
+      );
 
   Map<String, dynamic> toMap() => {
     "url": url,
     "headers": headers,
-    "type": type.name,
     "visible": visible.name,
     "__id": id,
   };
@@ -202,27 +189,21 @@ class WSSHttpDataModel {
     return split[1];
   }
 
-  factory WSSHttpDataModel.fromMap(Map<String, dynamic> map) =>
-      WSSHttpDataModel(
-        method: map["method"] ?? "get",
-        url: map["url"] ?? "",
-        headers: MapUtilities.convert<String, String>(map["headers"]),
-        body: map["body"],
-        responseType: WSSHttpFetchResponseType.values.firstWhere(
-          (e) =>
-              e.name ==
-              (map["response_type"] ?? "dynamic").toString().toLowerCase(),
-        ),
-        timeout: map["timeout"] ?? 60,
-        api:
-            WSSFetchApiType.values.firstWhereOrNull(
-              (e) =>
-                  (e.name.toLowerCase() ==
-                      (map["api"]).toString().toLowerCase()),
-            ) ??
-            WSSFetchApiType.http,
-        axios: AxiosModel.fromMap(map["axios"] ?? {}),
-      );
+  factory WSSHttpDataModel.fromMap(Map<String, dynamic> map) {
+    return WSSHttpDataModel(
+      method: map["method"] ?? "get",
+      url: map["url"] ?? "",
+      headers: MapUtilities.convert<String, String>(map["headers"]),
+      body: map["body"],
+      responseType: WSSHttpFetchResponseType.values.findEnum(
+        map["response_type"],
+        WSSHttpFetchResponseType.dynamic,
+      ),
+      timeout: map["timeout"] ?? 60,
+      api: WSSFetchApiType.values.findEnum(map["api"], WSSFetchApiType.http),
+      axios: AxiosModel.fromMap(map["axios"] ?? {}),
+    );
+  }
 
   Map<String, dynamic> toMap() => {
     "method": method,

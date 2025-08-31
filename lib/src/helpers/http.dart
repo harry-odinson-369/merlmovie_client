@@ -1,99 +1,159 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:http/http.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
-import 'package:merlmovie_client/src/helpers/logger.dart';
+import 'package:merlmovie_client/src/global/global.vars.dart';
+import 'package:merlmovie_client/src/helpers/generate.dart';
 import 'package:merlmovie_client/src/helpers/map.dart';
+import 'package:merlmovie_client/src/models/http_client_browser.dart';
 import 'package:merlmovie_client/src/models/wss.dart';
+import 'package:merlmovie_client/src/providers/browser.dart';
 import 'package:merlmovie_client/src/widgets/browser.dart';
+import 'package:provider/provider.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class HTTPRequest {
+  // Uint8List? _getBody(WSSHttpDataModel info) {
+  //   if (info.body == null) return null;
+  //   if (info.body is String) {
+  //     return utf8.encode(info.body!.toString());
+  //   } else if (info.body is List) {
+  //     return Uint8List.fromList(info.body! as List<int>);
+  //   }
+  //   return null;
+  // }
+  //
+  // LoadRequestMethod _getMethod(WSSHttpDataModel info) {
+  //   var method = LoadRequestMethod.values.firstWhereOrNull((e) {
+  //     return e.name == info.method.toLowerCase();
+  //   });
+  //   return method ?? LoadRequestMethod.get;
+  // }
+
+  String get _channel => "HttpClientFlutter";
+  String postMessage(String msg) => "$_channel.postMessage(`$msg`);";
+
+  String _axiosCDN([String? cdn]) =>
+      cdn ?? "https://cdn.jsdelivr.net/npm/axios@1.8.4/dist/axios.min.js";
+
+  String _injectAxios({AxiosModel? axios}) {
+    return """
+       function injectAxios() {
+          const script = document.createElement("script");
+          script.src = "${_axiosCDN(axios?.cdn)}";
+          script.onload = (ev) => {
+             ${postMessage("injected")}
+          };
+          document.body.appendChild(script);
+       }
+       injectAxios();
+    """;
+  }
+
+  String _axiosRequest(WSSHttpDataModel info) {
+    return """
+    (function(args) {
+      ${info.axios.script ?? """axios.request({
+        url: args.url,
+        method: args.method,
+        headers: args.headers,
+        data: args.body,
+        responseType: "arraybuffer",
+        validateStatus: () => true,
+      }).then((resp) => {
+        const data = Array.from(new Uint8Array(resp.data));
+        ${postMessage("""
+        \${JSON.stringify({
+          status: resp.status,
+          data: data,
+          headers: resp.headers,
+        })}
+        """)};
+      }).catch(err => {
+        ${postMessage("""
+        \${JSON.stringify({
+          status: 500,
+          data: Array.from(new TextEncoder().encode(err.message)),
+          headers: {},
+        })}
+        """)}
+      });"""}
+    })(${json.encode(info.toMap())});
+    """;
+  }
+
   Future<Response> axios(WSSHttpDataModel info, {Duration? timeout}) async {
-    Completer<Response> completer = Completer<Response>();
-    String? cookie = (info.headers?["cookie"] ?? info.headers?["Cookie"]);
-    if (cookie != null) {
-      await BrowserWidget.setCookie(info.url, cookie);
-    }
-    final hl = HeadlessInAppWebView(
-      initialUrlRequest: URLRequest(
-        url: WebUri(info.url),
-        method: info.method.toUpperCase(),
-        headers: info.headers,
+    var completer = Completer<Response>();
+    Timer? timer;
+    var controller = WebViewController();
+    controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+    controller.setNavigationDelegate(
+      NavigationDelegate(
+        onPageFinished: (url) {
+          timer?.cancel();
+          timer = null;
+          timer = Timer(const Duration(seconds: 1), () {
+            var script = _injectAxios(axios: info.axios);
+            controller.runJavaScript(script);
+          });
+        },
       ),
-      initialSettings: InAppWebViewSettings(
-        userAgent: info.headers?["User-Agent"] ?? info.headers?["user-agent"],
-      ),
-      onLoadStop: (controller, url) {
-        controller.addJavaScriptHandler(
-          handlerName: "axios_result",
-          callback: (arguments) {
-            completer.finish(
-              Response.bytes(
-                List<int>.from(arguments[2]),
-                arguments[0],
-                headers:
-                    MapUtilities.convert<String, String>(arguments[1]) ?? {},
-              ),
-            );
-          },
-        );
-        controller.injectJavascriptFileFromUrl(
-          urlFile: WebUri(
-            info.axios.cdn ??
-                "https://cdn.jsdelivr.net/npm/axios@1.8.4/dist/axios.min.js",
-          ),
-          scriptHtmlTagAttributes: ScriptHtmlTagAttributes(
-            onLoad: () {
-              controller.callAsyncJavaScript(
-                functionBody:
-                    info.axios.script ??
-                    """
-                  axios
-                    .request({
-                      url: __axios_url,
-                      method: __axios_method,
-                      headers: __axios_headers,
-                      data: __axios_data,
-                      responseType: "arraybuffer",
-                      validateStatus: () => true,
-                    })
-                    .then((resp) => {
-                      const data = Array.from(new Uint8Array(resp.data));
-                      const args = [resp.status, resp.headers, data];
-                      window.flutter_inappwebview.callHandler("axios_result", ...args);
-                    });
-                """,
-                arguments: {
-                  "__axios_url": info.url,
-                  "__axios_method": info.method.toUpperCase(),
-                  "__axios_data": info.body,
-                  "__axios_headers": info.headers,
-                  "__axios_response_type": "bytes",
-                },
-              );
-            },
-            onError: () {
-              completer.finish(Response("Error cannot use axios!", 500));
-            },
-            id: "axios",
-          ),
-        );
-      },
-    )..run();
-    MerlMovieClientLogger.logMsg(
-      "[Axios Request] Spawn a headless browser and making http request.",
     );
-    if (timeout != null) {
-      Future.delayed(timeout, () {
-        completer.finish(Response("Error connection timeout.", 408));
-      });
-    }
-    final response = await completer.future;
-    await hl.dispose();
-    MerlMovieClientLogger.logMsg("[Axios Request] Closed headless browser.");
-    return response;
+    controller.addJavaScriptChannel(
+      _channel,
+      onMessageReceived: (msg) async {
+        if (msg.message == "injected") {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            String script = _axiosRequest(info);
+            controller.runJavaScript(script);
+          });
+        } else {
+          var data = await compute(
+            (message) => json.decode(message),
+            msg.message,
+          );
+          var resp = Response.bytes(
+            List<int>.from(data["data"]),
+            data["status"],
+            headers:
+                MapUtilities.convert<String, String>(data["headers"]) ?? {},
+          );
+          completer.finish(resp);
+        }
+      },
+    );
+    controller.loadHtmlString(
+      """
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Document</title>
+          </head>
+          <body></body>
+        </html>
+      """,
+      baseUrl: info.url,
+    );
+    var reqInfo = HTTPClientBrowserModel(
+      id: GenerateHelper.random(1, 99).toString(),
+      info: info,
+      controller: controller,
+    );
+    NavigatorKey.currentContext?.read<BrowserProvider>().addRequest(reqInfo);
+    var resp = await completer.future.timeout(
+      timeout ?? const Duration(seconds: 16),
+      onTimeout: () async => Response("Error Timeout!", 408),
+    );
+    timer?.cancel();
+    timer = null;
+    controller.setNavigationDelegate(NavigationDelegate());
+    controller.loadRequest(Uri.parse("about:blank"));
+    NavigatorKey.currentContext?.read<BrowserProvider>().removeRequest(reqInfo);
+    return resp;
   }
 
   String resolveCookie(String cookie) {

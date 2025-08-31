@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -52,6 +53,7 @@ class MerlMovieClient {
     await _controller?.close();
     _controller = null;
     NavigatorKey.currentContext?.read<BrowserProvider>().close();
+    NavigatorKey.currentContext?.read<BrowserProvider>().clearHttpRequests();
   }
 
   static Future<DirectLink?> request(
@@ -78,24 +80,17 @@ class MerlMovieClient {
   }) async {
     Response response;
 
-    MerlMovieClientLogger.logMsg(
-      "Requesting to target ${embed.request_url}...",
-    );
-
-    String requestUrl = await InformationHelper.requestUrlWithXCI(
-      embed.request_url,
-      embed.plugin,
-    );
+    MerlMovieClientLogger.logMsg("Requesting to target ${embed.request_url}");
 
     if (embed.isWSS) {
-      _controller = SocketController(requestUrl);
+      _controller = SocketController(embed.request_url);
       response = await _requestWSS(_controller, embed, onProgress: onProgress);
       await _controller?.close();
       _controller = null;
     } else {
       try {
         response = await get(
-          Uri.parse(requestUrl),
+          Uri.parse(embed.request_url),
           headers: embed.plugin.headers,
         );
       } catch (err) {
@@ -157,7 +152,6 @@ class MerlMovieClient {
         try {
           final decoded = json.decode(event.toString());
           final wss = WSSDataModel.fromMap(decoded);
-
           if (wss.action == WSSAction.fetch && wss.httpInfo.url.isNotEmpty) {
             if (wss.httpInfo.url.startsWith("http")) {
               await _wssHttpRequest(_controller, wss);
@@ -220,9 +214,10 @@ class MerlMovieClient {
         "episode_id": embed.episode,
         "data": embed.detail.toJson(),
       };
+      final clientInfo = await InformationHelper.getClientInfo(embed.plugin);
       final streamData = WSSDataModel(
         action: WSSAction.stream,
-        data: mediaInfo,
+        data: {"media": mediaInfo, "client": clientInfo},
       );
       socket?.sendMessage(json.encode(streamData.toMap()));
     } catch (err) {
@@ -251,29 +246,33 @@ class MerlMovieClient {
     WSSDataModel wss,
     EmbedModel embed,
   ) async {
-    final database = await SharedPreferences.getInstance();
-    String dbKey = "${embed.plugin.docId}-${wss.httpInfo.dbKey}";
-    if (wss.httpInfo.dbMethod == WSSHttpDbMethod.get) {
-      String? source = database.getString(dbKey);
-      socket?.sendMessage(
-        _responseWSSResult(
-          wss,
-          Response(source ?? "", source == null ? 404 : 200),
-        ),
-      );
-    } else if (wss.httpInfo.dbMethod == WSSHttpDbMethod.set) {
-      bool isSet = await database.setString(
-        dbKey,
-        wss.httpInfo.body.toString(),
-      );
-      socket?.sendMessage(
-        _responseWSSResult(wss, Response("", isSet ? 200 : 500)),
-      );
-    } else if (wss.httpInfo.dbMethod == WSSHttpDbMethod.delete) {
-      bool isDeleted = await database.remove(dbKey);
-      socket?.sendMessage(
-        _responseWSSResult(wss, Response("", isDeleted ? 200 : 500)),
-      );
+    try {
+      final database = await SharedPreferences.getInstance();
+      String dbKey = "${embed.plugin.docId}-${wss.httpInfo.dbKey}";
+      if (wss.httpInfo.dbMethod == WSSHttpDbMethod.get) {
+        String? source = database.getString(dbKey);
+        socket?.sendMessage(
+          _responseWSSResult(
+            wss,
+            Response(source ?? "", source == null ? 404 : 200),
+          ),
+        );
+      } else if (wss.httpInfo.dbMethod == WSSHttpDbMethod.set) {
+        bool isSet = await database.setString(
+          dbKey,
+          wss.httpInfo.body.toString(),
+        );
+        socket?.sendMessage(
+          _responseWSSResult(wss, Response("", isSet ? 200 : 500)),
+        );
+      } else if (wss.httpInfo.dbMethod == WSSHttpDbMethod.delete) {
+        bool isDeleted = await database.remove(dbKey);
+        socket?.sendMessage(
+          _responseWSSResult(wss, Response("", isDeleted ? 200 : 500)),
+        );
+      }
+    } catch (err) {
+      log(err.toString());
     }
   }
 

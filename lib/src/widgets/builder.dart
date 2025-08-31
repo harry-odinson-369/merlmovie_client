@@ -7,6 +7,7 @@ import 'package:merlmovie_client/src/providers/player_state.dart';
 import 'package:merlmovie_client/src/widgets/browser.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 Widget MerlMovieClientProvider({
   required List<SingleChildWidget> providers,
@@ -69,6 +70,13 @@ class MerlMovieClientBrowserBuilder extends StatelessWidget {
                   left: 0,
                   child: webView(virtual.info!),
                 ),
+              if (virtual.httpRequests.isNotEmpty)
+                ...virtual.httpRequests.map((e) {
+                  return WebViewWidget(
+                    controller: e.controller,
+                    key: Key(e.id),
+                  );
+                }),
               Container(
                 color: context.theme.scaffoldBackgroundColor,
                 height: context.screen.height,
