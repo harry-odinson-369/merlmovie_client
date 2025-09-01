@@ -57,6 +57,7 @@ class MerlMovieClientPlayer extends StatefulWidget {
   final Future<DetailModel> Function(MovieModel movie)? onRequestDetail;
   final Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
   onDirectLinkRequested;
+  final String? local;
   const MerlMovieClientPlayer({
     super.key,
     required this.embed,
@@ -69,6 +70,7 @@ class MerlMovieClientPlayer extends StatefulWidget {
     this.initialPosition = Duration.zero,
     this.onRequestDetail,
     this.onDirectLinkRequested,
+    this.local,
   });
 
   static void setDeviceOrientationAndSystemUI() {
@@ -221,6 +223,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         embed,
         onProgress: onRequestProgress,
         onError: showErrorOnRequest ? onRequestError : null,
+        local: widget.local,
       );
       update();
       if (directLink != null) {

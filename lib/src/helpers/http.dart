@@ -2,55 +2,21 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:http/http.dart';
+import 'package:merlmovie_client/merlmovie_client.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
-import 'package:merlmovie_client/src/global/global.vars.dart';
-import 'package:merlmovie_client/src/helpers/generate.dart';
 import 'package:merlmovie_client/src/helpers/map.dart';
-import 'package:merlmovie_client/src/models/http_client_browser.dart';
 import 'package:merlmovie_client/src/models/wss.dart';
-import 'package:merlmovie_client/src/providers/browser.dart';
 import 'package:merlmovie_client/src/widgets/browser.dart';
-import 'package:provider/provider.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 class HTTPRequest {
-  // Uint8List? _getBody(WSSHttpDataModel info) {
-  //   if (info.body == null) return null;
-  //   if (info.body is String) {
-  //     return utf8.encode(info.body!.toString());
-  //   } else if (info.body is List) {
-  //     return Uint8List.fromList(info.body! as List<int>);
-  //   }
-  //   return null;
-  // }
-  //
-  // LoadRequestMethod _getMethod(WSSHttpDataModel info) {
-  //   var method = LoadRequestMethod.values.firstWhereOrNull((e) {
-  //     return e.name == info.method.toLowerCase();
-  //   });
-  //   return method ?? LoadRequestMethod.get;
-  // }
-
-  String get _channel => "HttpClientFlutter";
-  String postMessage(String msg) => "$_channel.postMessage(`$msg`);";
+  String get _channel => "axios_flutter";
+  String _callHandler(String args) =>
+      "window.flutter_inappwebview.callHandler(`$_channel`, $args);";
 
   String _axiosCDN([String? cdn]) =>
       cdn ?? "https://cdn.jsdelivr.net/npm/axios@1.8.4/dist/axios.min.js";
-
-  String _injectAxios({AxiosModel? axios}) {
-    return """
-       function injectAxios() {
-          const script = document.createElement("script");
-          script.src = "${_axiosCDN(axios?.cdn)}";
-          script.onload = (ev) => {
-             ${postMessage("injected")}
-          };
-          document.body.appendChild(script);
-       }
-       injectAxios();
-    """;
-  }
 
   String _axiosRequest(WSSHttpDataModel info) {
     return """
@@ -62,70 +28,20 @@ class HTTPRequest {
         data: args.body,
         responseType: "arraybuffer",
         validateStatus: () => true,
+        withCredentials: args.with_credentials === true,
       }).then((resp) => {
         const data = Array.from(new Uint8Array(resp.data));
-        ${postMessage("""
-        \${JSON.stringify({
-          status: resp.status,
-          data: data,
-          headers: resp.headers,
-        })}
-        """)};
+        ${_callHandler("...[data, resp.status, resp.headers]")}
       }).catch(err => {
-        ${postMessage("""
-        \${JSON.stringify({
-          status: 500,
-          data: Array.from(new TextEncoder().encode(err.message)),
-          headers: {},
-        })}
-        """)}
+        const data = Array.from(new TextEncoder().encode(err.message));
+        ${_callHandler("...[data, 500, {}]")}
       });"""}
     })(${json.encode(info.toMap())});
     """;
   }
 
-  Future<Response> axios(WSSHttpDataModel info, {Duration? timeout}) async {
-    var completer = Completer<Response>();
-    Timer? timer;
-    var controller = WebViewController();
-    controller.setJavaScriptMode(JavaScriptMode.unrestricted);
-    controller.setNavigationDelegate(
-      NavigationDelegate(
-        onPageFinished: (url) {
-          timer?.cancel();
-          timer = null;
-          timer = Timer(const Duration(seconds: 1), () {
-            var script = _injectAxios(axios: info.axios);
-            controller.runJavaScript(script);
-          });
-        },
-      ),
-    );
-    controller.addJavaScriptChannel(
-      _channel,
-      onMessageReceived: (msg) async {
-        if (msg.message == "injected") {
-          Future.delayed(const Duration(milliseconds: 500), () {
-            String script = _axiosRequest(info);
-            controller.runJavaScript(script);
-          });
-        } else {
-          var data = await compute(
-            (message) => json.decode(message),
-            msg.message,
-          );
-          var resp = Response.bytes(
-            List<int>.from(data["data"]),
-            data["status"],
-            headers:
-                MapUtilities.convert<String, String>(data["headers"]) ?? {},
-          );
-          completer.finish(resp);
-        }
-      },
-    );
-    controller.loadHtmlString(
-      """
+  String get _htmlPlaceholder {
+    return """
         <!DOCTYPE html>
         <html lang="en">
           <head>
@@ -135,25 +51,88 @@ class HTTPRequest {
           </head>
           <body></body>
         </html>
-      """,
-      baseUrl: info.url,
+        """;
+  }
+
+  void _onLoadStop(
+    InAppWebViewController controller,
+    Completer<Response> completer,
+    WSSHttpDataModel info,
+  ) {
+    controller.addJavaScriptHandler(
+      handlerName: _channel,
+      callback: (arguments) {
+        completer.finish(
+          Response.bytes(
+            List<int>.from(arguments[0]),
+            arguments[1],
+            headers: MapUtilities.convert<String, String>(arguments[2]) ?? {},
+          ),
+        );
+      },
     );
-    var reqInfo = HTTPClientBrowserModel(
-      id: GenerateHelper.random(1, 99).toString(),
-      info: info,
-      controller: controller,
+    controller.injectJavascriptFileFromUrl(
+      urlFile: WebUri(_axiosCDN(info.axios.cdn)),
+      scriptHtmlTagAttributes: ScriptHtmlTagAttributes(
+        onLoad: () {
+          controller.callAsyncJavaScript(functionBody: _axiosRequest(info));
+        },
+        onError: () {
+          completer.finish(Response("Error cannot use axios!", 500));
+        },
+        id: "axios",
+      ),
     );
-    NavigatorKey.currentContext?.read<BrowserProvider>().addRequest(reqInfo);
-    var resp = await completer.future.timeout(
-      timeout ?? const Duration(seconds: 16),
-      onTimeout: () async => Response("Error Timeout!", 408),
+  }
+
+  Future<Response> axios(WSSHttpDataModel info, {Duration? timeout}) async {
+    var completer = Completer<Response>();
+    Timer? timer;
+    var cookie = (info.headers?["cookie"] ?? info.headers?["Cookie"]);
+    var userAgent = info.headers?["User-Agent"] ?? info.headers?["user-agent"];
+    if (cookie != null) await BrowserWidget.setCookie(info.url, cookie);
+    var headless = HeadlessInAppWebView(
+      initialUrlRequest:
+          info.initial_origin != null
+              ? URLRequest(
+                url: WebUri(info.initial_origin!),
+                cachePolicy: URLRequestCachePolicy.RETURN_CACHE_DATA_ELSE_LOAD,
+              )
+              : null,
+      initialData:
+          info.initial_origin == null
+              ? InAppWebViewInitialData(
+                data: _htmlPlaceholder,
+                baseUrl: WebUri(info.url),
+              )
+              : null,
+      initialSettings: InAppWebViewSettings(userAgent: userAgent),
+      onLoadStop: (controller, url) {
+        if (info.initial_origin != null) {
+          timer?.cancel();
+          timer = null;
+          timer = Timer(const Duration(seconds: 1), () {
+            _onLoadStop(controller, completer, info);
+          });
+        } else {
+          _onLoadStop(controller, completer, info);
+        }
+      },
+    )..run().catchError((err) {});
+    MerlMovieClientLogger.logMsg(
+      "Created a new headless webview and making axios client request.",
+    );
+    var response = await completer.future.timeout(
+      timeout ?? Duration(seconds: 16),
+      onTimeout: () => Future.value(Response("Error connection timeout.", 408)),
     );
     timer?.cancel();
     timer = null;
-    controller.setNavigationDelegate(NavigationDelegate());
-    controller.loadRequest(Uri.parse("about:blank"));
-    NavigatorKey.currentContext?.read<BrowserProvider>().removeRequest(reqInfo);
-    return resp;
+    await headless.dispose().catchError((err) {});
+    MerlMovieClientLogger.logMsg(
+      "Closed a headless webview with status code: ${response.statusCode}.",
+    );
+    return response;
   }
 
   String resolveCookie(String cookie) {

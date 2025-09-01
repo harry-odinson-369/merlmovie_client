@@ -158,6 +158,8 @@ class AxiosModel {
 class WSSHttpDataModel {
   String method;
   String url;
+  String? initial_origin;
+  bool withCredentials;
   Map<String, String>? headers;
   Object? body;
   WSSHttpFetchResponseType responseType;
@@ -168,12 +170,14 @@ class WSSHttpDataModel {
   WSSHttpDataModel({
     required this.method,
     required this.url,
+    required this.initial_origin,
     required this.headers,
     required this.body,
     required this.responseType,
     required this.timeout,
     required this.api,
     required this.axios,
+    this.withCredentials = false,
   });
 
   bool get isResponseBytes => responseType == WSSHttpFetchResponseType.bytes;
@@ -193,6 +197,7 @@ class WSSHttpDataModel {
     return WSSHttpDataModel(
       method: map["method"] ?? "get",
       url: map["url"] ?? "",
+      initial_origin: map["initial_origin"],
       headers: MapUtilities.convert<String, String>(map["headers"]),
       body: map["body"],
       responseType: WSSHttpFetchResponseType.values.findEnum(
@@ -200,6 +205,7 @@ class WSSHttpDataModel {
         WSSHttpFetchResponseType.dynamic,
       ),
       timeout: map["timeout"] ?? 60,
+      withCredentials: map["with_credentials"] ?? false,
       api: WSSFetchApiType.values.findEnum(map["api"], WSSFetchApiType.http),
       axios: AxiosModel.fromMap(map["axios"] ?? {}),
     );
@@ -208,6 +214,8 @@ class WSSHttpDataModel {
   Map<String, dynamic> toMap() => {
     "method": method,
     "url": url,
+    "initial_origin": initial_origin,
+    "with_credentials": withCredentials,
     "headers": headers,
     "body": body,
     "response_type": responseType.name,

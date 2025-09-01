@@ -53,22 +53,24 @@ class MerlMovieClient {
     await _controller?.close();
     _controller = null;
     NavigatorKey.currentContext?.read<BrowserProvider>().close();
-    NavigatorKey.currentContext?.read<BrowserProvider>().clearHttpRequests();
   }
 
+  /// [local] is used to put two letter country code.
   static Future<DirectLink?> request(
     EmbedModel embed, {
     void Function(int status, String message)? onError,
     void Function(double progress)? onProgress,
+    String? local,
   }) async {
     DirectLink? directLink;
     try {
-      directLink = await _request(embed, onProgress: onProgress);
+      directLink = await _request(embed, onProgress: onProgress, local: local);
     } catch (_) {}
     directLink ??= await _request(
       embed,
       onProgress: onProgress,
       onError: onError,
+      local: local,
     );
     return directLink;
   }
@@ -77,6 +79,7 @@ class MerlMovieClient {
     EmbedModel embed, {
     void Function(int status, String message)? onError,
     void Function(double progress)? onProgress,
+    String? local,
   }) async {
     Response response;
 
@@ -84,7 +87,12 @@ class MerlMovieClient {
 
     if (embed.isWSS) {
       _controller = SocketController(embed.request_url);
-      response = await _requestWSS(_controller, embed, onProgress: onProgress);
+      response = await _requestWSS(
+        _controller,
+        embed,
+        onProgress: onProgress,
+        local: local,
+      );
       await _controller?.close();
       _controller = null;
     } else {
@@ -133,6 +141,7 @@ class MerlMovieClient {
     SocketController? socket,
     EmbedModel embed, {
     void Function(double percent)? onProgress,
+    String? local,
   }) async {
     Completer<Response> completer = Completer<Response>();
     try {
@@ -214,7 +223,10 @@ class MerlMovieClient {
         "episode_id": embed.episode,
         "data": embed.detail.toJson(),
       };
-      final clientInfo = await InformationHelper.getClientInfo(embed.plugin);
+      final clientInfo = await InformationHelper.getClientInfo(
+        embed.plugin,
+        local: local,
+      );
       final streamData = WSSDataModel(
         action: WSSAction.stream,
         data: {"media": mediaInfo, "client": clientInfo},
@@ -357,6 +369,7 @@ class MerlMovieClient {
     );
   }
 
+  /// [local] is used to put two letter country code.
   static Future open(
     EmbedModel embed, {
     List<PluginModel> plugins = const [],
@@ -368,6 +381,7 @@ class MerlMovieClient {
     Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
     onDirectLinkRequested,
     bool pushReplacement = false,
+    String? local,
   }) async {
     var playerPlugins =
         plugins.where((e) {
@@ -419,6 +433,7 @@ class MerlMovieClient {
               data: ThemeData.dark(),
               child: MerlMovieClientPlayer(
                 embed: embed,
+                local: local,
                 similar: similar,
                 callback: callback,
                 seasons: embed.detail.seasons,

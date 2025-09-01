@@ -36,9 +36,14 @@ class InformationHelper {
     return deviceInformation;
   }
 
-  static Future<Map<String, dynamic>> getClientInfo(PluginModel plugin) async {
+  static Future<Map<String, dynamic>> getClientInfo(
+    PluginModel plugin, {
+    String? local,
+  }) async {
+    var device_info = await deviceInfo;
+    if (local != null) device_info["local"] = local;
     return {
-      "device_info": await deviceInfo,
+      "device_info": device_info,
       "app_info": await appInfo,
       "plugin_info": plugin.toMap(),
     };

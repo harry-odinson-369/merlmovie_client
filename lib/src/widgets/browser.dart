@@ -4,8 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:webview_cookie_manager_plus/webview_cookie_manager_plus.dart'
-    as wcmp;
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:merlmovie_client/src/controllers/socket.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
@@ -34,19 +33,20 @@ class BrowserWidget extends StatefulWidget {
   });
 
   static Future<String> getCookie(String url) async {
-    final cookieManager = wcmp.WebviewCookieManager();
-    final cookies = await cookieManager.getCookies(url);
+    final cookieManager = CookieManager();
+    final cookies = await cookieManager.getCookies(url: WebUri(url));
     return cookies.map((e) => "${e.name}=${e.value}").toList().join("; ");
   }
 
   static Future setCookie(String url, String cookie) async {
-    final cookieManager = wcmp.WebviewCookieManager();
-    await cookieManager.setCookies(
-      cookie.split("; ").map((co) {
-        return Cookie(co.split("=")[0], co.split("=")[1]);
-      }).toList(),
-      origin: url,
-    );
+    final cookieManager = CookieManager();
+    for (var co in cookie.split("; ")) {
+      await cookieManager.setCookie(
+        url: WebUri(url),
+        name: co.split("=")[0],
+        value: co.split("=")[1],
+      );
+    }
   }
 
   static String get uniqueId {
