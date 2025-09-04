@@ -62,25 +62,6 @@ class MerlMovieClient {
     void Function(double progress)? onProgress,
     String? local,
   }) async {
-    DirectLink? directLink;
-    try {
-      directLink = await _request(embed, onProgress: onProgress, local: local);
-    } catch (_) {}
-    directLink ??= await _request(
-      embed,
-      onProgress: onProgress,
-      onError: onError,
-      local: local,
-    );
-    return directLink;
-  }
-
-  static Future<DirectLink?> _request(
-    EmbedModel embed, {
-    void Function(int status, String message)? onError,
-    void Function(double progress)? onProgress,
-    String? local,
-  }) async {
     Response response;
 
     MerlMovieClientLogger.logMsg("Requesting to target ${embed.request_url}");
