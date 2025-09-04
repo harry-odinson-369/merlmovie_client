@@ -6,12 +6,14 @@ import 'package:merlmovie_client/src/models/plugin.dart';
 class PluginItemView extends StatelessWidget {
   final PluginModel plugin;
   final bool isSelected;
+  final Widget? trailing;
   final void Function()? onTap;
   const PluginItemView({
     super.key,
     this.isSelected = false,
     required this.plugin,
     this.onTap,
+    this.trailing,
   });
 
   @override
@@ -88,6 +90,11 @@ class PluginItemView extends StatelessWidget {
                 ],
               ),
             ),
+            if (trailing != null)
+              Padding(
+                padding: EdgeInsets.only(right: 16, left: 12),
+                child: trailing!,
+              ),
           ],
         ),
       ),

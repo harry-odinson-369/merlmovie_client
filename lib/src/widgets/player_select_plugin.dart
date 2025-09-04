@@ -113,8 +113,6 @@ class _PlayerSelectPluginState extends State<PlayerSelectPlugin> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: PluginItemView(
-                        plugin: e,
-                        isSelected: isSelected,
                         onTap: () {
                           if (!isSelected) {
                             Navigator.of(context).pop(e);
@@ -122,6 +120,21 @@ class _PlayerSelectPluginState extends State<PlayerSelectPlugin> {
                             Navigator.of(context).pop(null);
                           }
                         },
+                        plugin: e,
+                        isSelected: isSelected,
+                        trailing:
+                            isSelected
+                                ? InkWell(
+                                  onTap: () => Navigator.of(context).pop(e),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Icon(
+                                      Icons.restart_alt,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                )
+                                : null,
                       ),
                     ),
                   );
