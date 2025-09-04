@@ -14,7 +14,7 @@ class SubtitleHelper {
   ]) async {
     final response = await http.get(Uri.parse(link), headers: headers);
     final archive = GZipDecoder().decodeBytes(response.bodyBytes);
-    return utf8.decode(archive);
+    return utf8.decode(archive, allowMalformed: true);
   }
 
   static Future<String> extractZip(
@@ -25,7 +25,7 @@ class SubtitleHelper {
     final archive = ZipDecoder().decodeBytes(response.bodyBytes);
     for (final f in archive.files) {
       try {
-        final content = utf8.decode(f.content);
+        final content = utf8.decode(f.content, allowMalformed: true);
         final format = SubtitleHelper.detectFormat(content);
         if (format == SubtitleType.vtt || format == SubtitleType.srt) {
           return content;
@@ -46,7 +46,10 @@ class SubtitleHelper {
       if (extension == SubtitleFetchExtension.text) {
         final response = await http.get(uri, headers: headers);
         try {
-          String content = utf8.decode(response.bodyBytes);
+          String content = utf8.decode(
+            response.bodyBytes,
+            allowMalformed: true,
+          );
           final format = SubtitleHelper.detectFormat(content);
           if (format == SubtitleType.srt || format == SubtitleType.vtt) {
             content = SubtitleHelper.cleanSubtitles(content);
