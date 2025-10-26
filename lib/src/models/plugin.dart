@@ -11,6 +11,8 @@ enum PluginSource { file, server, create }
 
 enum StreamType { webview, api }
 
+enum RequestSelectType { single, multi }
+
 enum PluginVisibility { all, ios, android, none, development }
 
 enum MediaType { multi, tv, movie }
@@ -37,6 +39,7 @@ class PluginModel {
   String version = "1.0.0";
   List<String> query = [];
   PluginSource installedSource = PluginSource.server;
+  RequestSelectType requestSelectType = RequestSelectType.single;
 
   ///[allowedDomains] is only work when [webView] set to [WebViewProviderType.webview_flutter]
   List<String> allowedDomains = [];
@@ -78,6 +81,7 @@ class PluginModel {
     this.author = "Anonymous",
     this.version = "1.0.0",
     this.query = const [],
+    this.requestSelectType = RequestSelectType.single,
   });
 
   String get website {
@@ -144,6 +148,10 @@ class PluginModel {
         map["stream_type"],
         StreamType.api,
       ),
+      requestSelectType: RequestSelectType.values.findEnum(
+        map["request_select_type"],
+        RequestSelectType.single,
+      ),
       mediaType: MediaType.values.findEnum(map["media_type"], MediaType.multi),
     );
   }
@@ -178,6 +186,7 @@ class PluginModel {
     "allowed_domains": allowedDomains,
     "query": query,
     "installed_source": installedSource.name,
+    "request_select_type": requestSelectType.name,
   };
 
   bool _compare_arr(List a, List b) {
