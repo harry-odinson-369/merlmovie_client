@@ -179,6 +179,7 @@ class MerlMovieClient {
             );
           } else if (wss.action == WSSAction.select) {
             WSSSelectModel? selected = await showWSSSelectSheet(
+              wss.data["title"] ?? "Which One?",
               List<WSSSelectModel>.from(
                 (wss.data["items"] ?? []).map((e) {
                   return WSSSelectModel.fromMap(e);

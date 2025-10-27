@@ -5,17 +5,25 @@ import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/models/wss.dart';
 
-Future<WSSSelectModel?> showWSSSelectSheet(List<WSSSelectModel> items) {
+Future<WSSSelectModel?> showWSSSelectSheet(
+  String title,
+  List<WSSSelectModel> items,
+) {
   return showModalBottomSheet<WSSSelectModel>(
     context: NavigatorKey.currentContext!,
     isScrollControlled: true,
-    builder: (context) => WSSSelectSheet(items: items),
+    builder: (context) => WSSSelectSheet(title: title, items: items),
   );
 }
 
 class WSSSelectSheet extends StatelessWidget {
+  final String title;
   final List<WSSSelectModel> items;
-  const WSSSelectSheet({super.key, required this.items});
+  const WSSSelectSheet({
+    super.key,
+    this.title = "Which One?",
+    required this.items,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +59,7 @@ class WSSSelectSheet extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
-                    "Which One?",
+                    title,
                     style: context.theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,

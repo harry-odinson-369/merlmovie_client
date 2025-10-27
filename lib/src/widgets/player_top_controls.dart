@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
+import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/merlmovie_client.dart';
 import 'package:merlmovie_client/src/models/direct_link.dart';
 import 'package:merlmovie_client/src/models/embed.dart';
@@ -44,7 +45,7 @@ class PlayerTopControls extends StatelessWidget {
       ),
     );
     if (isPop) {
-      Navigator.of(context).pop();
+      Navigator.of(NavigatorKey.currentContext!).pop();
       MerlMovieClient.closeWSSConnection();
     }
   }
