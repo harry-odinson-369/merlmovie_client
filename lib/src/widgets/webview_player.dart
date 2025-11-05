@@ -112,10 +112,15 @@ class _MerlMovieClientWebViewPlayerState
         onProgress: (pro) => onWebRequestProgress(pro.toDouble()),
         onNavigationRequest: (request) async {
           final uri = Uri.parse(request.url);
+          String? status = uri.queryParameters["status"];
+          String? message = uri.queryParameters["message"];
           bool isMatched = widget.embed.plugin.allowedDomains.exist(
             (e) => e == uri.hostname_only,
           );
-          if (request.isMainFrame && !isMatched) {
+          if (status == "fail") {
+            onError(message);
+            return NavigationDecision.prevent;
+          } else if (request.isMainFrame && !isMatched) {
             if (popup_links.length >= 3) {
               popup_links.clear();
             }
@@ -174,6 +179,29 @@ class _MerlMovieClientWebViewPlayerState
           hideBarButton.value = true;
         });
       });
+    }
+  }
+
+  void onError([String? msg]) async {
+    bool? accepted = await showPromptDialog(
+      title: "Source Error",
+      subtitle:
+          widget.plugins.isNotEmpty
+              ? "\n${Uri.decodeComponent(msg ?? "")}${msg != null ? "\n" : ""}Would you like to change the source?"
+              : "",
+      titleStyle: context.theme.textTheme.titleLarge?.copyWith(
+        color: Colors.white,
+      ),
+      subtitleStyle: context.theme.textTheme.bodyMedium?.copyWith(
+        color: Colors.white70,
+      ),
+      negativeButtonTextStyle: dialogButtonTextStyle?.copyWith(
+        color: dialogButtonTextStyle?.color?.withOpacity(.8),
+      ),
+      positiveButtonTextStyle: dialogButtonTextStyle,
+    );
+    if (accepted) {
+      changePlugin();
     }
   }
 

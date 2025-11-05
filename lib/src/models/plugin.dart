@@ -39,9 +39,11 @@ class PluginModel {
   String version = "1.0.0";
   List<String> query = [];
   PluginSource installedSource = PluginSource.server;
+
+  /// Used to indicate the plugin is required user to select item while loading source.
   RequestSelectType requestSelectType = RequestSelectType.single;
 
-  ///[allowedDomains] is only work when [webView] set to [WebViewProviderType.webview_flutter]
+  /// Allow the domain name are in this array only.
   List<String> allowedDomains = [];
 
   bool get underDevelopment => visible == PluginVisibility.development;
