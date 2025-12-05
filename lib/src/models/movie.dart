@@ -805,11 +805,11 @@ class ImagePath {
   });
 
   factory ImagePath.fromJson(Map<String, dynamic> json) => ImagePath(
-    aspectRatio: json["aspect_ratio"] ?? 0.0,
+    aspectRatio: double.parse("${json["aspect_ratio"] ?? 0.0}"),
     height: json["height"] ?? 0,
     iso6391: json["iso_639_1"] ?? "",
     filePath: json["file_path"] ?? "",
-    voteAverage: json["vote_average"] ?? 0.0,
+    voteAverage: double.parse("${json["vote_average"] ?? 0.0}"),
     voteCount: json["vote_count"] ?? 0,
     width: json["width"] ?? 0,
   );

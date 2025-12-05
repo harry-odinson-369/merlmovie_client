@@ -10,7 +10,15 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 class MerlMovieClientWebViewWidget extends StatefulWidget {
   final String link;
-  const MerlMovieClientWebViewWidget({super.key, required this.link});
+  final void Function(String url)? onPageFinished;
+  final NavigationDecision Function(NavigationRequest request)?
+  onNavigationRequest;
+  const MerlMovieClientWebViewWidget({
+    super.key,
+    required this.link,
+    this.onPageFinished,
+    this.onNavigationRequest,
+  });
 
   @override
   State<MerlMovieClientWebViewWidget> createState() =>
@@ -30,6 +38,11 @@ class _MerlMovieClientWebViewWidgetState
         WebViewController()
           ..setNavigationDelegate(
             NavigationDelegate(
+              onPageFinished: widget.onPageFinished,
+              onNavigationRequest: (request) async {
+                return widget.onNavigationRequest?.call(request) ??
+                    NavigationDecision.navigate;
+              },
               onProgress: (progress) {
                 this.progress = progress;
                 update();
