@@ -32,6 +32,7 @@ dependencies:
   flutter_hls_parser: ^2.0.1
   flutter_colorpicker: ^1.1.0
   google_mobile_ads: ^5.3.1
+  crypto: ^3.0.7
   subtitle:
     git:
       url: https://github.com/harry-odinson-369/subtitle.git

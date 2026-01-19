@@ -31,22 +31,36 @@ class PluginItemView extends StatelessWidget {
             if (isSelected) Icon(Icons.done, size: 26, color: Colors.white),
             if (!isSelected) SizedBox(width: 26),
             SizedBox(width: 24),
-            Container(
-              padding: EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: plugin.logoBackgroundColor,
+            if (plugin.imageSize == PluginImageSize.normal)
+              Container(
+                padding: EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: plugin.logoBackgroundColor,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: plugin.image,
+                  fit: BoxFit.contain,
+                  height: 38,
+                  width: 38,
+                  errorWidget:
+                      (context, url, error) =>
+                          Icon(Icons.link, size: 32, color: Colors.white),
+                ),
+              ),
+            if (plugin.imageSize == PluginImageSize.cover)
+              ClipRRect(
                 borderRadius: BorderRadius.circular(6),
+                child: CachedNetworkImage(
+                  imageUrl: plugin.image,
+                  fit: BoxFit.cover,
+                  height: 44,
+                  width: 44,
+                  errorWidget:
+                      (context, url, error) =>
+                          Icon(Icons.link, size: 32, color: Colors.white),
+                ),
               ),
-              child: CachedNetworkImage(
-                imageUrl: plugin.image,
-                fit: BoxFit.contain,
-                height: 38,
-                width: 38,
-                errorWidget:
-                    (context, url, error) =>
-                        Icon(Icons.link, size: 32, color: Colors.white),
-              ),
-            ),
             SizedBox(width: 12),
             Flexible(
               child: Column(

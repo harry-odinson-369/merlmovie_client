@@ -242,7 +242,7 @@ class MerlMovieClient {
   ) async {
     try {
       final database = await SharedPreferences.getInstance();
-      String dbKey = "${embed.plugin.docId}-${wss.httpInfo.dbKey}";
+      String dbKey = "${embed.plugin.id}-${wss.httpInfo.dbKey}";
       if (wss.httpInfo.dbMethod == WSSHttpDbMethod.get) {
         String? source = database.getString(dbKey);
         socket?.sendMessage(
@@ -363,6 +363,7 @@ class MerlMovieClient {
     Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
     onDirectLinkRequested,
     bool pushReplacement = false,
+    bool fadeTransition = false,
     String? local,
   }) async {
     var playerPlugins =
@@ -384,23 +385,30 @@ class MerlMovieClient {
 
     if (embed.plugin.openType == PluginOpenType.player) {
       if (embed.plugin.useWebView) {
-        var route = MaterialPageRoute(
-          builder: (context) {
-            return Theme(
-              data: ThemeData.dark(),
-              child: MerlMovieClientWebViewPlayer(
-                embed: embed,
-                similar: similar,
-                callback: callback,
-                plugins: filtered_plugins,
-                onRequestDetail: onRequestDetail,
-                onDirectLinkRequested: onDirectLinkRequested,
-                selectPluginSheetLabel: selectPluginSheetLabel,
-                onDisposedDeviceOrientations: onDisposedDeviceOrientations,
-              ),
-            );
-          },
+        Widget child = Theme(
+          data: ThemeData.dark(),
+          child: MerlMovieClientWebViewPlayer(
+            embed: embed,
+            similar: similar,
+            callback: callback,
+            plugins: filtered_plugins,
+            onRequestDetail: onRequestDetail,
+            onDirectLinkRequested: onDirectLinkRequested,
+            selectPluginSheetLabel: selectPluginSheetLabel,
+            onDisposedDeviceOrientations: onDisposedDeviceOrientations,
+          ),
         );
+        var route =
+            fadeTransition
+                ? PageRouteBuilder(
+                  pageBuilder:
+                      (context, animation, secondaryAnimation) => child,
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child1) =>
+                          FadeTransition(opacity: animation, child: child1),
+                  transitionDuration: const Duration(milliseconds: 300),
+                )
+                : MaterialPageRoute(builder: (context) => child);
         if (pushReplacement) {
           return await Navigator.of(
             NavigatorKey.currentContext!,
@@ -409,26 +417,33 @@ class MerlMovieClient {
           return await Navigator.of(NavigatorKey.currentContext!).push(route);
         }
       } else if (embed.plugin.useInternalPlayer) {
-        var route = MaterialPageRoute(
-          builder: (context) {
-            return Theme(
-              data: ThemeData.dark(),
-              child: MerlMovieClientPlayer(
-                embed: embed,
-                local: local,
-                similar: similar,
-                callback: callback,
-                seasons: embed.detail.seasons,
-                plugins: filtered_plugins,
-                initialPosition: initialPosition,
-                onRequestDetail: onRequestDetail,
-                onDirectLinkRequested: onDirectLinkRequested,
-                selectPluginSheetLabel: selectPluginSheetLabel,
-                onDisposedDeviceOrientations: onDisposedDeviceOrientations,
-              ),
-            );
-          },
+        Widget child = Theme(
+          data: ThemeData.dark(),
+          child: MerlMovieClientPlayer(
+            embed: embed,
+            local: local,
+            similar: similar,
+            callback: callback,
+            seasons: embed.detail.seasons,
+            plugins: filtered_plugins,
+            initialPosition: initialPosition,
+            onRequestDetail: onRequestDetail,
+            onDirectLinkRequested: onDirectLinkRequested,
+            selectPluginSheetLabel: selectPluginSheetLabel,
+            onDisposedDeviceOrientations: onDisposedDeviceOrientations,
+          ),
         );
+        var route =
+            fadeTransition
+                ? PageRouteBuilder(
+                  pageBuilder:
+                      (context, animation, secondaryAnimation) => child,
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child1) =>
+                          FadeTransition(opacity: animation, child: child1),
+                  transitionDuration: const Duration(milliseconds: 300),
+                )
+                : MaterialPageRoute(builder: (context) => child);
         if (pushReplacement) {
           return await Navigator.of(
             NavigatorKey.currentContext!,
@@ -438,12 +453,17 @@ class MerlMovieClient {
         }
       }
     } else if (embed.plugin.openType == PluginOpenType.webview) {
+      Widget child = MerlMovieClientWebViewWidget(link: embed.request_url);
       Navigator.of(NavigatorKey.currentContext!).push(
-        MaterialPageRoute(
-          builder: (context) {
-            return MerlMovieClientWebViewWidget(link: embed.request_url);
-          },
-        ),
+        fadeTransition
+            ? PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => child,
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child1) =>
+                      FadeTransition(opacity: animation, child: child1),
+              transitionDuration: const Duration(milliseconds: 300),
+            )
+            : MaterialPageRoute(builder: (context) => child),
       );
     }
   }

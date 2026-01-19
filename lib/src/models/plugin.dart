@@ -19,7 +19,10 @@ enum MediaType { multi, tv, movie }
 
 enum PluginOpenType { player, webview }
 
+enum PluginImageSize { normal, cover }
+
 class PluginModel {
+  String id;
   PluginOpenType openType = PluginOpenType.player;
   Color? logoBackgroundColor;
   StreamType streamType = StreamType.api;
@@ -32,13 +35,15 @@ class PluginModel {
   String author = "Anonymous";
   String description = "";
   String script = "";
+  int initialScriptMs = 1000;
   String officialWebsite = "";
   bool useIMDb = false;
   PluginVisibility visible = PluginVisibility.all;
-  String? docId;
   String version = "1.0.0";
   List<String> query = [];
   PluginSource installedSource = PluginSource.server;
+  String? updatableUrl;
+  PluginImageSize imageSize = PluginImageSize.normal;
 
   /// Used to indicate the plugin is required user to select item while loading source.
   RequestSelectType requestSelectType = RequestSelectType.single;
@@ -63,6 +68,7 @@ class PluginModel {
   }
 
   PluginModel({
+    this.id = "",
     this.openType = PluginOpenType.player,
     this.streamType = StreamType.api,
     this.mediaType = MediaType.multi,
@@ -77,13 +83,15 @@ class PluginModel {
     this.script = "",
     this.officialWebsite = "",
     this.useIMDb = false,
-    this.docId,
     this.logoBackgroundColor,
     this.allowedDomains = const [],
     this.author = "Anonymous",
     this.version = "1.0.0",
     this.query = const [],
     this.requestSelectType = RequestSelectType.single,
+    this.updatableUrl,
+    this.imageSize = PluginImageSize.normal,
+    this.initialScriptMs = 1000,
   });
 
   String get website {
@@ -119,6 +127,7 @@ class PluginModel {
     var bgColor = ColorUtilities.fromHex(map["logo_background_color"]);
 
     return PluginModel(
+      id: map["id"] ?? "",
       embedUrl: url ?? "",
       tvEmbedUrl: tvUrl ?? "",
       headers: MapUtilities.convert<String, String>(map["headers"]),
@@ -128,7 +137,6 @@ class PluginModel {
       script: map["script"] ?? "",
       officialWebsite: map["official_website"] ?? "",
       useIMDb: map["use_imdb"] ?? false,
-      docId: map["_docId"],
       logoBackgroundColor: bgColor,
       author: map["author"] ?? "Anonymous",
       version: map["version"] ?? "1.0.0",
@@ -155,6 +163,12 @@ class PluginModel {
         RequestSelectType.single,
       ),
       mediaType: MediaType.values.findEnum(map["media_type"], MediaType.multi),
+      imageSize: PluginImageSize.values.findEnum(
+        map["image_size"],
+        PluginImageSize.normal,
+      ),
+      updatableUrl: map["updatable_url"],
+      initialScriptMs: map["initial_script_ms"] ?? 1000,
     );
   }
 
@@ -168,6 +182,7 @@ class PluginModel {
   }
 
   Map<String, dynamic> toMap() => {
+    "id": id,
     "open_type": openType.name,
     "stream_type": streamType.name,
     "media_type": mediaType.name,
@@ -181,7 +196,6 @@ class PluginModel {
     "official_website": officialWebsite,
     "use_imdb": useIMDb,
     "visible": visible.name,
-    "_docId": docId,
     "logo_background_color": logoBackgroundColor != null ? logoBgToHex : null,
     "author": author,
     "version": version,
@@ -189,7 +203,40 @@ class PluginModel {
     "query": query,
     "installed_source": installedSource.name,
     "request_select_type": requestSelectType.name,
+    "updatable_url": updatableUrl,
+    "image_size": imageSize.name,
+    "initial_script_ms": initialScriptMs,
   };
+
+  void update(PluginModel p) {
+    openType = p.openType;
+    streamType = p.streamType;
+    mediaType = p.mediaType;
+    visible = p.visible;
+    installedSource = p.installedSource;
+
+    embedUrl = p.embedUrl;
+    tvEmbedUrl = p.tvEmbedUrl;
+    headers = p.headers;
+
+    name = p.name;
+    image = p.image;
+    description = p.description;
+    script = p.script;
+    officialWebsite = p.officialWebsite;
+
+    useIMDb = p.useIMDb;
+    logoBackgroundColor = p.logoBackgroundColor;
+    author = p.author;
+    version = p.version;
+
+    allowedDomains = p.allowedDomains;
+    query = p.query;
+
+    requestSelectType = p.requestSelectType;
+    updatableUrl = p.updatableUrl;
+    imageSize = p.imageSize;
+  }
 
   bool _compare_arr(List a, List b) {
     if (a.isEmpty && b.isEmpty) return true;
@@ -208,12 +255,9 @@ class PluginModel {
 
   @override
   bool operator ==(Object other) {
-    return other is PluginModel &&
-        name == other.name &&
-        embedUrl == other.embedUrl &&
-        tvEmbedUrl == other.tvEmbedUrl;
+    return other is PluginModel && id == other.id;
   }
 
   @override
-  int get hashCode => name.hashCode ^ embedUrl.hashCode ^ tvEmbedUrl.hashCode;
+  int get hashCode => id.hashCode;
 }

@@ -182,8 +182,8 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     restoreSystemChrome = false;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) {
+        PageRouteBuilder(
+          pageBuilder: (context, a1, a2) {
             return MerlMovieClientWebViewPlayer(
               embed: embed,
               similar: similar_arr,
@@ -195,6 +195,10 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
               onDisposedDeviceOrientations: widget.onDisposedDeviceOrientations,
             );
           },
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 300),
         ),
       );
     });

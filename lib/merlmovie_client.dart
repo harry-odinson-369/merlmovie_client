@@ -2,6 +2,7 @@ export 'src/merlmovie_client.dart';
 
 export 'src/helpers/proxy.dart';
 export 'src/helpers/logger.dart';
+export 'src/helpers/script.dart';
 
 export 'src/ads/helper.dart';
 

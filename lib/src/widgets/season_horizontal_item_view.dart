@@ -29,8 +29,8 @@ class SeasonHorizontalItemView extends StatelessWidget {
                       season.posterPath,
                       TMDBImageSize.w200,
                     ),
-            width: 112,
-            height: 168,
+            width: 86,
+            height: 128,
             fit: BoxFit.cover,
           ),
         ),
@@ -49,7 +49,7 @@ class SeasonHorizontalItemView extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: context.theme.textTheme.titleMedium?.copyWith(
                     color: textColor,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -62,6 +62,7 @@ class SeasonHorizontalItemView extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: context.theme.textTheme.bodyMedium?.copyWith(
                         color: textColor?.withOpacity(.8),
+                        fontSize: 14,
                       ),
                     ),
                   ),

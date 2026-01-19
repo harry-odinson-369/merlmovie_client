@@ -63,46 +63,21 @@ class _PlayerSelectPluginState extends State<PlayerSelectPlugin> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: Colors.white54,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    widget.label ?? "Sources",
-                    style: context.theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: Colors.white54,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-              ],
+            padding: const EdgeInsets.only(top: 12, bottom: 6),
+            child: Text(
+              widget.label ?? "Sources",
+              textAlign: TextAlign.center,
+              style: context.theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
           Expanded(
             child: ListView(
               shrinkWrap: true,
               controller: controller,
-              padding: EdgeInsets.symmetric(horizontal: 12),
+              //padding: EdgeInsets.symmetric(horizontal: 12),
               children: [
                 ...widget.plugins.build((e, i) {
                   bool isSelected = e == widget.embed.plugin;

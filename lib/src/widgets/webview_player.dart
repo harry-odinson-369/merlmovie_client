@@ -14,6 +14,7 @@ import 'package:merlmovie_client/src/extensions/uri.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
 import 'package:merlmovie_client/src/helpers/generate.dart';
 import 'package:merlmovie_client/src/helpers/proxy.dart';
+import 'package:merlmovie_client/src/helpers/script.dart';
 import 'package:merlmovie_client/src/helpers/themoviedb.dart';
 import 'package:merlmovie_client/src/merlmovie_client.dart';
 import 'package:merlmovie_client/src/models/callback.dart';
@@ -77,6 +78,7 @@ class _MerlMovieClientWebViewPlayerState
   WebViewController? webViewFlutterController;
 
   Timer? _webProgressTimer;
+  Timer? _webScriptExecutionTime;
 
   Timer? _hideBarButtonsTimer;
 
@@ -147,13 +149,28 @@ class _MerlMovieClientWebViewPlayerState
     webProgress = prog;
     update();
     if (prog >= 100) {
+      _webScriptExecutionTime?.cancel();
+      _webScriptExecutionTime = null;
+      _webScriptExecutionTime ??= Timer(
+        Duration(milliseconds: widget.embed.plugin.initialScriptMs),
+        () async {
+          String script = widget.embed.plugin.script;
+          if (script.isNotEmpty) {
+            if (script.startsWith("http")) {
+              final newScript = await ScriptHelper.getScriptFromUrl(script);
+              if (newScript != null) script = newScript;
+            }
+            webViewFlutterController?.runJavaScript(script);
+          }
+        },
+      );
       _webProgressTimer?.cancel();
       _webProgressTimer = null;
       _webProgressTimer ??= Timer(const Duration(seconds: 1), () {
         isLoading = false;
         update();
         createAutoAd();
-        Future.delayed(const Duration(seconds: 1), () {
+        Future.delayed(const Duration(seconds: 1), () async {
           _fakeVideoTimer = Timer.periodic(Duration(seconds: 1), (timer) {
             var pos = GenerateHelper.random(1, 999999);
             _fakeVideoController?.value = VideoPlayerValue(
@@ -171,9 +188,6 @@ class _MerlMovieClientWebViewPlayerState
               isInitialized: true,
             );
           });
-          if (widget.embed.plugin.script.isNotEmpty) {
-            webViewFlutterController?.runJavaScript(widget.embed.plugin.script);
-          }
         });
         Future.delayed(const Duration(seconds: 3), () {
           hideBarButton.value = true;
@@ -266,6 +280,7 @@ class _MerlMovieClientWebViewPlayerState
       MerlMovieClient.open(
         newEmbed,
         pushReplacement: true,
+        fadeTransition: true,
         plugins: widget.plugins,
         callback: widget.callback,
         onRequestDetail: widget.onRequestDetail,
