@@ -168,7 +168,7 @@ class PluginModel {
         PluginImageSize.normal,
       ),
       updatableUrl: map["updatable_url"],
-      initialScriptMs: map["initial_script_ms"] ?? 1000,
+      initialScriptMs: int.parse('${map["initial_script_ms"] ?? 1000}'),
     );
   }
 
