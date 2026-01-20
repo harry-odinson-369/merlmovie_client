@@ -102,6 +102,34 @@ class _MerlMovieClientWebViewPlayerState
           PlatformWebViewControllerCreationParams(),
         ),
       );
+      wk.setCustomWidgetCallbacks(
+        onShowCustomWidget: (widget, onCustomWidgetHidden) {
+          Navigator.of(NavigatorKey.currentContext!).push(
+            MaterialPageRoute(
+              builder: (context) {
+                return Stack(
+                  children: [
+                    Positioned(
+                      bottom: -1,
+                      top: -1,
+                      left: -1,
+                      right: -1,
+                      child: SizedBox(
+                        height: context.screen.height,
+                        width: context.screen.width,
+                        child: widget,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          );
+        },
+        onHideCustomWidget: () {
+          Navigator.of(NavigatorKey.currentContext!).pop();
+        },
+      );
       wk.setMediaPlaybackRequiresUserGesture(false);
       webViewFlutterController = WebViewController.fromPlatform(wk);
       (webViewFlutterController!.platform as AndroidWebViewController)
