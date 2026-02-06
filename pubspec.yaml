@@ -31,7 +31,7 @@ dependencies:
   shelf: ^1.4.2
   flutter_hls_parser: ^2.0.1
   flutter_colorpicker: ^1.1.0
-  google_mobile_ads: ^5.3.1
+  google_mobile_ads: ^7.0.0
   crypto: ^3.0.7
   subtitle:
     git:
