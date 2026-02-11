@@ -6,7 +6,6 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:merlmovie_client/src/controllers/ad.dart';
 import 'package:merlmovie_client/src/apis/client.dart';
 import 'package:merlmovie_client/src/models/cast_loading.dart';
 import 'package:merlmovie_client/src/models/cast_subtitle.dart';
@@ -120,8 +119,6 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   List<Season> seasons_arr = [];
   List<MovieModel> similar_arr = [];
 
-  VideoAdController? _adController;
-
   Duration position = Duration.zero;
 
   bool restoreSystemChrome = true;
@@ -129,6 +126,8 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   double progress = 0;
 
   bool isEditingSubtitleTheme = false;
+
+  Timer? _adTimer;
 
   ValueNotifier<SubtitleTheme> subtitleTheme = ValueNotifier(
     SubtitleTheme.fromMap({}),
@@ -407,27 +406,13 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   }
 
   void createAutoAd() {
-    if (MerlMovieClient.interstitialAdUnitId != null) {
-      _adController = VideoAdController(
-        adUnitId: MerlMovieClient.interstitialAdUnitId!,
-        controller: controller,
-        interval: MerlMovieClient.interstitialAdInterval,
-      );
-      _adController?.onClosed = () {
-        if (CastClientController.instance.isConnected.value) {
-          CastClientController.instance.play();
-        } else {
-          controller?.play();
+    if (MerlMovieClient.isAdEnabled) {
+      _adTimer ??= Timer.periodic(MerlMovieClient.adInterval, (_) async {
+        await MerlMovieClient.ad.waitForInit();
+        if (MerlMovieClient.ad.interstitial.isLoaded) {
+          MerlMovieClient.ad.interstitial.showAd();
         }
-      };
-      _adController?.onShowed = () {
-        if (CastClientController.instance.isConnected.value) {
-          CastClientController.instance.pause();
-        } else {
-          controller?.pause();
-        }
-      };
-      _adController?.start();
+      });
     }
   }
 
@@ -824,8 +809,8 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         }
       });
     }
-    _adController?.dispose();
-    _adController = null;
+    _adTimer?.cancel();
+    _adTimer = null;
     MerlMovieClient.closeWSSConnection();
     _animationController?.dispose();
     hideControls.removeListener(hideControlsListener);

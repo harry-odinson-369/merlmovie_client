@@ -6,13 +6,11 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:merlmovie_client/src/controllers/ad.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
 import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
 import 'package:merlmovie_client/src/extensions/uri.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
-import 'package:merlmovie_client/src/helpers/generate.dart';
 import 'package:merlmovie_client/src/helpers/proxy.dart';
 import 'package:merlmovie_client/src/helpers/script.dart';
 import 'package:merlmovie_client/src/helpers/themoviedb.dart';
@@ -30,7 +28,6 @@ import 'package:merlmovie_client/src/widgets/player_select_similar_sheet.dart';
 import 'package:merlmovie_client/src/widgets/prompt_dialog.dart';
 import 'package:merlmovie_client/src/widgets/webview.dart';
 import 'package:provider/provider.dart';
-import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -77,14 +74,12 @@ class _MerlMovieClientWebViewPlayerState
 
   WebViewController? webViewFlutterController;
 
+  Timer? _adTimer;
+
   Timer? _webProgressTimer;
   Timer? _webScriptExecutionTime;
 
   Timer? _hideBarButtonsTimer;
-
-  VideoAdController? _adController;
-  VideoPlayerController? _fakeVideoController;
-  Timer? _fakeVideoTimer;
 
   Future createWebViewFlutterController() async {
     if (Platform.isIOS) {
@@ -172,8 +167,6 @@ class _MerlMovieClientWebViewPlayerState
   void update() => mounted ? setState(() {}) : () {};
 
   void onWebRequestProgress(double prog) {
-    _fakeVideoTimer?.cancel();
-    _fakeVideoTimer = null;
     webProgress = prog;
     update();
     if (prog >= 100) {
@@ -198,25 +191,6 @@ class _MerlMovieClientWebViewPlayerState
         isLoading = false;
         update();
         createAutoAd();
-        Future.delayed(const Duration(seconds: 1), () async {
-          _fakeVideoTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-            var pos = GenerateHelper.random(1, 999999);
-            _fakeVideoController?.value = VideoPlayerValue(
-              duration: Duration(minutes: 180),
-              isPlaying: true,
-              isBuffering: false,
-              size: Size(1, 1),
-              position: Duration(seconds: pos),
-              buffered: [
-                DurationRange(
-                  Duration(seconds: pos),
-                  Duration(seconds: pos + 30),
-                ),
-              ],
-              isInitialized: true,
-            );
-          });
-        });
         Future.delayed(const Duration(seconds: 3), () {
           hideBarButton.value = true;
         });
@@ -248,16 +222,13 @@ class _MerlMovieClientWebViewPlayerState
   }
 
   void createAutoAd() {
-    if (MerlMovieClient.interstitialAdUnitId != null) {
-      _fakeVideoController = VideoPlayerController.networkUrl(
-        Uri.parse("https://example.com"),
-      );
-      update();
-      _adController = VideoAdController(
-        adUnitId: MerlMovieClient.interstitialAdUnitId!,
-        interval: MerlMovieClient.interstitialAdInterval,
-        controller: _fakeVideoController,
-      )..start();
+    if (MerlMovieClient.isAdEnabled) {
+      _adTimer ??= Timer.periodic(MerlMovieClient.adInterval, (_) async {
+        await MerlMovieClient.ad.waitForInit();
+        if (MerlMovieClient.ad.interstitial.isLoaded) {
+          MerlMovieClient.ad.interstitial.showAd();
+        }
+      });
     }
   }
 
@@ -488,12 +459,12 @@ class _MerlMovieClientWebViewPlayerState
         }
       });
     }
-    _adController?.dispose();
-    _adController = null;
-    _fakeVideoTimer?.cancel();
-    _fakeVideoTimer = null;
-    _fakeVideoController?.dispose().catchError((er) {});
-    _fakeVideoController = null;
+    _adTimer?.cancel();
+    _adTimer = null;
+    _webScriptExecutionTime?.cancel();
+    _webScriptExecutionTime = null;
+    _hideBarButtonsTimer?.cancel();
+    _hideBarButtonsTimer = null;
     webViewFlutterController
         ?.setNavigationDelegate(NavigationDelegate())
         .catchError((er) {});
@@ -519,17 +490,25 @@ class _MerlMovieClientWebViewPlayerState
         body: Stack(
           children: [
             if (!isLoading)
-              IndexedStack(
-                index: 0,
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    height: context.screen.height,
-                    width: context.screen.width,
-                    child: WebViewWidget(controller: webViewFlutterController!),
-                  ),
-                  ...popup_links.limit(3),
-                ],
+              Positioned(
+                top: -1,
+                bottom: -1,
+                left: -1,
+                right: -1,
+                child: IndexedStack(
+                  index: 0,
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      height: context.screen.height,
+                      width: context.screen.width,
+                      child: WebViewWidget(
+                        controller: webViewFlutterController!,
+                      ),
+                    ),
+                    ...popup_links.limit(3),
+                  ],
+                ),
               ),
             if (isLoading)
               PlayerLoading(
