@@ -785,7 +785,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     hideControls.addListener(hideControlsListener);
     SubtitleTheme.getTheme().then((value) => subtitleTheme.value = value);
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
-    WakelockPlus.enable();
+    WakelockPlus.enable().catchError((er) {});
     initialize(initialPos: widget.initialPosition);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PlayerStateProvider>(context, listen: false).setValue(true);

@@ -43,6 +43,7 @@ class MerlMovieClientWebViewPlayer extends StatefulWidget {
   final Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
   onDirectLinkRequested;
   final List<MovieModel> similar;
+  final bool zenMode;
   const MerlMovieClientWebViewPlayer({
     super.key,
     required this.embed,
@@ -53,6 +54,7 @@ class MerlMovieClientWebViewPlayer extends StatefulWidget {
     this.onRequestDetail,
     this.callback,
     this.onDirectLinkRequested,
+    this.zenMode = false,
   });
 
   @override
@@ -70,7 +72,7 @@ class _MerlMovieClientWebViewPlayerState
 
   ValueNotifier<bool> hideBarButton = ValueNotifier(false);
 
-  List<MerlMovieClientWebViewWidget> popup_links = [];
+  MerlMovieClientWebViewWidget? PopupLinkHiddenView;
 
   WebViewController? webViewFlutterController;
 
@@ -146,10 +148,10 @@ class _MerlMovieClientWebViewPlayerState
             onError(message);
             return NavigationDecision.prevent;
           } else if (request.isMainFrame && !isMatched) {
-            if (popup_links.length >= 3) {
-              popup_links.clear();
-            }
-            popup_links.add(MerlMovieClientWebViewWidget(link: request.url));
+            PopupLinkHiddenView = null;
+            PopupLinkHiddenView = MerlMovieClientWebViewWidget(
+              link: request.url,
+            );
             update();
             return NavigationDecision.prevent;
           }
@@ -278,6 +280,7 @@ class _MerlMovieClientWebViewPlayerState
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       MerlMovieClient.open(
         newEmbed,
+        zenMode: widget.zenMode,
         pushReplacement: true,
         fadeTransition: true,
         plugins: widget.plugins,
@@ -434,7 +437,7 @@ class _MerlMovieClientWebViewPlayerState
   @override
   void initState() {
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
-    WakelockPlus.enable();
+    WakelockPlus.enable().catchError((er) {});
     createWebViewFlutterController();
     update();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -472,7 +475,7 @@ class _MerlMovieClientWebViewPlayerState
         ?.loadRequest(Uri.parse("about:blank"))
         .catchError((er) {});
     webViewFlutterController = null;
-    popup_links.clear();
+    PopupLinkHiddenView = null;
     _webProgressTimer?.cancel();
     _hideBarButtonsTimer?.cancel();
     super.dispose();
@@ -489,28 +492,32 @@ class _MerlMovieClientWebViewPlayerState
         extendBody: true,
         body: Stack(
           children: [
-            if (!isLoading)
-              Positioned(
-                top: -1,
-                bottom: -1,
-                left: -1,
-                right: -1,
-                child: IndexedStack(
-                  index: 0,
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      height: context.screen.height,
-                      width: context.screen.width,
-                      child: WebViewWidget(
-                        controller: webViewFlutterController!,
-                      ),
-                    ),
-                    ...popup_links.limit(3),
-                  ],
-                ),
+            Positioned(
+              top: -1,
+              bottom: -1,
+              left: -1,
+              right: -1,
+              child: IndexedStack(
+                index: 0,
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    height: context.screen.height,
+                    width: context.screen.width,
+                    child: WebViewWidget(controller: webViewFlutterController!),
+                  ),
+                  (PopupLinkHiddenView ?? SizedBox()),
+                ],
               ),
-            if (isLoading)
+            ),
+            if (widget.zenMode && webProgress > 0 && webProgress < 99)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LinearProgressIndicator(value: webProgress / 100),
+              ),
+            if (isLoading && !widget.zenMode)
               PlayerLoading(
                 progress: webProgress,
                 embed: widget.embed,

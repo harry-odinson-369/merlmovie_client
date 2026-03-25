@@ -367,6 +367,7 @@ class MerlMovieClient {
     bool pushReplacement = false,
     bool fadeTransition = false,
     String? local,
+    bool zenMode = false,
   }) async {
     var playerPlugins =
         plugins.where((e) {
@@ -391,6 +392,7 @@ class MerlMovieClient {
           data: ThemeData.dark(),
           child: MerlMovieClientWebViewPlayer(
             embed: embed,
+            zenMode: zenMode,
             similar: similar,
             callback: callback,
             plugins: filtered_plugins,
