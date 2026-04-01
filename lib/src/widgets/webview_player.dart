@@ -11,6 +11,7 @@ import 'package:merlmovie_client/src/extensions/list.dart';
 import 'package:merlmovie_client/src/extensions/seasons.dart';
 import 'package:merlmovie_client/src/extensions/uri.dart';
 import 'package:merlmovie_client/src/global/global.vars.dart';
+import 'package:merlmovie_client/src/helpers/g_ad.dart';
 import 'package:merlmovie_client/src/helpers/proxy.dart';
 import 'package:merlmovie_client/src/helpers/script.dart';
 import 'package:merlmovie_client/src/helpers/themoviedb.dart';
@@ -76,7 +77,7 @@ class _MerlMovieClientWebViewPlayerState
 
   WebViewController? webViewFlutterController;
 
-  Timer? _adTimer;
+  GAdHelper? gAdHelper;
 
   Timer? _webProgressTimer;
   Timer? _webScriptExecutionTime;
@@ -192,7 +193,9 @@ class _MerlMovieClientWebViewPlayerState
       _webProgressTimer ??= Timer(const Duration(seconds: 1), () {
         isLoading = false;
         update();
-        createAutoAd();
+        gAdHelper = GAdHelper();
+        gAdHelper?.debugName = "WebViewPlayer";
+        gAdHelper?.create(autoShow: true);
         Future.delayed(const Duration(seconds: 3), () {
           hideBarButton.value = true;
         });
@@ -220,17 +223,6 @@ class _MerlMovieClientWebViewPlayerState
     );
     if (accepted) {
       changePlugin();
-    }
-  }
-
-  void createAutoAd() {
-    if (MerlMovieClient.isAdEnabled) {
-      _adTimer ??= Timer.periodic(MerlMovieClient.adInterval, (_) async {
-        await MerlMovieClient.ad.waitForInit();
-        if (MerlMovieClient.ad.interstitial.isLoaded) {
-          MerlMovieClient.ad.interstitial.showAd();
-        }
-      });
     }
   }
 
@@ -462,8 +454,7 @@ class _MerlMovieClientWebViewPlayerState
         }
       });
     }
-    _adTimer?.cancel();
-    _adTimer = null;
+    gAdHelper?.destroy();
     _webScriptExecutionTime?.cancel();
     _webScriptExecutionTime = null;
     _hideBarButtonsTimer?.cancel();

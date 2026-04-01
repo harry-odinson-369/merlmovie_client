@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:ad_flow/ad_flow.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,23 +32,11 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 SocketController? _controller;
-Duration? _adInterval;
-bool _adEnabled = true;
 
 class MerlMovieClient {
   static SocketController? get socket => _controller;
 
   static bool get isPlayerActive => NavigatorKey.isPlayerActive;
-
-  static AdFlow get ad => AdFlow.instance;
-
-  static Duration get adInterval => _adInterval ?? Duration(minutes: 15);
-
-  static bool get isAdEnabled => _adEnabled;
-
-  static void setAdEnabled(bool enable) => _adEnabled = enable;
-
-  static void setAdInterval(Duration interval) => _adInterval = interval;
 
   static Future closeWSSConnection() async {
     await _controller?.close();
