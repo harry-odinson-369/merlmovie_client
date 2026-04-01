@@ -115,11 +115,10 @@ class GAdHelper {
     final isReadyToShow = diff.inMinutes >= config.interval.inMinutes;
     final isNearTime = diff.inMinutes >= (config.interval.inMinutes - 1);
     if (isNearTime && !isReadyToShow) {
-      _preloadAd();
+      _preloadAd(autoShow: autoShow);
       return;
     }
     if (!isReadyToShow) return;
-    if (autoShow) showAd();
   }
 
   void showAd() {
@@ -140,7 +139,7 @@ class GAdHelper {
     }
   }
 
-  void _preloadAd() {
+  void _preloadAd({bool autoShow = false}) {
     if (_preloadedAd != null || _isLoading) return;
     _isLoading = true;
     _log("Preloading ad in 1 min left.");
@@ -150,6 +149,10 @@ class GAdHelper {
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
           _preloadedAd = ad;
+          if (autoShow) {
+            _isShowing = true;
+            _attachCallbacksAndShow(_preloadedAd!);
+          }
           _isLoading = false;
           _log("Ad preloaded.");
         },
