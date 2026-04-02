@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:merlmovie_client/src/apis/client.dart';
-import 'package:merlmovie_client/src/helpers/g_ad.dart';
+import 'package:merlmovie_client/src/controllers/g_ad.dart';
 import 'package:merlmovie_client/src/models/cast_loading.dart';
 import 'package:merlmovie_client/src/models/cast_subtitle.dart';
 import 'package:merlmovie_client/src/extensions/context.dart';
@@ -128,7 +128,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
 
   bool isEditingSubtitleTheme = false;
 
-  GAdHelper? gAdHelper;
+  GAdController? gAdController;
 
   ValueNotifier<SubtitleTheme> subtitleTheme = ValueNotifier(
     SubtitleTheme.fromMap({}),
@@ -318,16 +318,15 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   bool _playOnClosedAd = true;
 
   void _createAutoAd() {
-    gAdHelper = GAdHelper();
-    gAdHelper?.debugName = "APIPlayer";
-    gAdHelper?.onShowed = () {
+    gAdController = GAdController();
+    gAdController?.onShowed = () {
       _playOnClosedAd = controller?.value.isPlaying == true;
       controller?.pause();
     };
-    gAdHelper?.onClosed = () {
+    gAdController?.onClosed = () {
       if (_playOnClosedAd) controller?.play();
     };
-    gAdHelper?.create(autoShow: true);
+    gAdController?.create();
   }
 
   Future<bool> changeQuality(
@@ -814,7 +813,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
         }
       });
     }
-    gAdHelper?.destroy();
+    gAdController?.dispose();
     MerlMovieClient.closeWSSConnection();
     _animationController?.dispose();
     hideControls.removeListener(hideControlsListener);

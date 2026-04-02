@@ -3,7 +3,6 @@ export 'src/merlmovie_client.dart';
 export 'src/helpers/proxy.dart';
 export 'src/helpers/logger.dart';
 export 'src/helpers/script.dart';
-export 'src/helpers/g_ad.dart';
 
 export 'src/apis/client.dart';
 export 'src/apis/server.dart';
@@ -32,6 +31,7 @@ export 'src/widgets/player_video_builder.dart';
 export 'src/global/global.vars.dart';
 export 'src/extensions/uri.dart';
 export 'src/providers/browser.dart';
+export 'src/controllers/g_ad.dart';
 
 export 'package:wakelock_plus/wakelock_plus.dart' show WakelockPlus;
 export 'package:provider/provider.dart' show ChangeNotifierProvider;
