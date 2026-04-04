@@ -2,6 +2,13 @@
   <library name="Dart Packages" type="DartPackagesLibraryType">
     <properties>
       <option name="packageNameToDirsMap">
+        <entry key="app_tracking_transparency">
+          <value>
+            <list>
+              <option value="$USER_HOME$/.pub-cache/hosted/pub.dev/app_tracking_transparency-2.0.6+1/lib" />
+            </list>
+          </value>
+        </entry>
         <entry key="archive">
           <value>
             <list>
@@ -933,6 +940,7 @@
       <root url="file://$USER_HOME$/.pub-cache/git/video_player-f021ba8c3e22766e90d12e22a5ba7cd8c15922a3//lib" />
       <root url="file://$USER_HOME$/.pub-cache/git/video_player_android-a6b992ad64460d65daf94f9ea60748e7a657aa33//lib" />
       <root url="file://$USER_HOME$/.pub-cache/git/wifi_address_helper-574e911985132d76ab65999dff195ec9e72ebe1b//lib" />
+      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/app_tracking_transparency-2.0.6+1/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/archive-4.0.9/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/args-2.7.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/async-2.13.0/lib" />
