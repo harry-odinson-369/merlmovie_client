@@ -34,6 +34,10 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
+typedef BlockedURLCallback = void Function(String url, String? origin);
+
+BlockedURLCallback? _blockedUrlCallback;
+
 class MerlMovieClientWebViewPlayer extends StatefulWidget {
   final EmbedModel embed;
   final List<PluginModel> plugins;
@@ -57,6 +61,10 @@ class MerlMovieClientWebViewPlayer extends StatefulWidget {
     this.onDirectLinkRequested,
     this.zenMode = false,
   });
+
+  static set blockedUrlCallback(BlockedURLCallback? cb) {
+    _blockedUrlCallback = cb;
+  }
 
   @override
   State<MerlMovieClientWebViewPlayer> createState() =>
@@ -154,6 +162,10 @@ class _MerlMovieClientWebViewPlayerState
               link: request.url,
             );
             update();
+            if (_blockedUrlCallback != null) {
+              var origin = await webViewFlutterController?.currentUrl();
+              _blockedUrlCallback!(request.url, origin);
+            }
             return NavigationDecision.prevent;
           }
           return NavigationDecision.navigate;
@@ -164,6 +176,7 @@ class _MerlMovieClientWebViewPlayerState
       Uri.parse(widget.embed.request_url),
       headers: widget.embed.plugin.headers ?? {},
     );
+    webViewFlutterController?.setBackgroundColor(Colors.black);
     update();
   }
 
@@ -193,8 +206,10 @@ class _MerlMovieClientWebViewPlayerState
       _webProgressTimer ??= Timer(const Duration(seconds: 1), () {
         isLoading = false;
         update();
-        gAdController = GAdController();
-        gAdController?.create();
+        if (gAdController == null) {
+          gAdController = GAdController();
+          gAdController?.create();
+        }
         Future.delayed(const Duration(seconds: 3), () {
           hideBarButton.value = true;
         });

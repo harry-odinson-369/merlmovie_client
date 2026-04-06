@@ -24,6 +24,8 @@ class GAdController {
 
   bool _isRetrying = false;
 
+  String? _scheduleId;
+
   Timer? _interval;
 
   int _scheduleInSeconds = 0;
@@ -121,20 +123,29 @@ class GAdController {
   }
 
   void _scheduleNext() {
+    if (_scheduleId != null) return;
     _interval?.cancel();
     _interval = null;
+    _scheduleId = GenerateHelper.random(99, 9999).toString();
     int min = (_minDur ?? defMinDur).inSeconds;
     int max = (_maxDur ?? defMaxDur).inSeconds;
     final delay = Duration(seconds: GenerateHelper.random(min, max));
     _scheduleInSeconds = delay.inSeconds;
-    _interval = Timer(delay, _show);
+    _interval = Timer(delay, () {
+      _scheduleId = null;
+      _show();
+    });
     _log("Schedule the next ad in ${delay.inSeconds} seconds");
   }
 
   Future<bool> _canRequestAd() async {
     if (_unitId == null) return false;
     try {
-      return await ConsentInformation.instance.canRequestAds();
+      if (Platform.isAndroid) {
+        return await ConsentInformation.instance.canRequestAds();
+      } else {
+        return true;
+      }
     } catch (_) {
       return true;
     }

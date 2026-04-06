@@ -318,6 +318,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
   bool _playOnClosedAd = true;
 
   void _createAutoAd() {
+    if (gAdController != null) return;
     gAdController = GAdController();
     gAdController?.onShowed = () {
       _playOnClosedAd = controller?.value.isPlaying == true;
