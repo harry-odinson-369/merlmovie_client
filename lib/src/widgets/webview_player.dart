@@ -148,15 +148,10 @@ class _MerlMovieClientWebViewPlayerState
         onProgress: (pro) => onWebRequestProgress(pro.toDouble()),
         onNavigationRequest: (request) async {
           final uri = Uri.parse(request.url);
-          String? status = uri.queryParameters["status"];
-          String? message = uri.queryParameters["message"];
           bool isMatched = widget.embed.plugin.allowedDomains.exist(
             (e) => e == uri.hostname_only,
           );
-          if (status == "fail") {
-            onError(message);
-            return NavigationDecision.prevent;
-          } else if (request.isMainFrame && !isMatched) {
+          if (request.isMainFrame && !isMatched) {
             PopupLinkHiddenView = null;
             PopupLinkHiddenView = MerlMovieClientWebViewWidget(
               link: request.url,
@@ -172,15 +167,35 @@ class _MerlMovieClientWebViewPlayerState
         },
       ),
     );
+    webViewFlutterController?.addJavaScriptChannel(
+      "WebViewPlayerChannel",
+      onMessageReceived: (msg) {
+        if (msg.message == "error") {
+          onError();
+        }
+      },
+    );
+    webViewFlutterController?.setBackgroundColor(Colors.black);
     webViewFlutterController?.loadRequest(
       Uri.parse(widget.embed.request_url),
       headers: widget.embed.plugin.headers ?? {},
     );
-    webViewFlutterController?.setBackgroundColor(Colors.black);
     update();
   }
 
   void update() => mounted ? setState(() {}) : () {};
+
+  void pauseEveryVideos() {
+    webViewFlutterController?.runJavaScript(
+      "document.querySelectorAll('video').forEach(v => v.pause());",
+    );
+  }
+
+  void playEveryVideos() {
+    webViewFlutterController?.runJavaScript(
+      "document.querySelectorAll('video').forEach(v => v.play());",
+    );
+  }
 
   void onWebRequestProgress(double prog) {
     webProgress = prog;
@@ -208,6 +223,8 @@ class _MerlMovieClientWebViewPlayerState
         update();
         if (gAdController == null) {
           gAdController = GAdController();
+          gAdController?.onShowed = pauseEveryVideos;
+          gAdController?.onClosed = playEveryVideos;
           gAdController?.create();
         }
         Future.delayed(const Duration(seconds: 3), () {
@@ -469,6 +486,7 @@ class _MerlMovieClientWebViewPlayerState
       });
     }
     gAdController?.dispose();
+    gAdController = null;
     _webScriptExecutionTime?.cancel();
     _webScriptExecutionTime = null;
     _hideBarButtonsTimer?.cancel();

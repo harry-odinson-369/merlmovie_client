@@ -815,6 +815,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
       });
     }
     gAdController?.dispose();
+    gAdController = null;
     MerlMovieClient.closeWSSConnection();
     _animationController?.dispose();
     hideControls.removeListener(hideControlsListener);

@@ -19,6 +19,8 @@ class GAdController {
   static Duration defMaxDur = Duration(minutes: 10);
   static Duration defMinDur = Duration(minutes: 5);
 
+  bool _disposed = false;
+
   bool _isShowing = false;
   bool get isShowing => _isShowing;
 
@@ -123,6 +125,7 @@ class GAdController {
   }
 
   void _scheduleNext() {
+    if (_disposed) return;
     if (_scheduleId != null) return;
     _interval?.cancel();
     _interval = null;
@@ -152,6 +155,7 @@ class GAdController {
   }
 
   Future _show() async {
+    if (_disposed) return;
     if (_isShowing) {
       _log("Ad is showing");
       _scheduleNext();
@@ -187,6 +191,7 @@ class GAdController {
   }
 
   Future<InterstitialAd?> _requestAndShow() {
+    if (_disposed) return Future.value(null);
     final completer = Completer<InterstitialAd?>();
     if (_unitId == null) {
       completer.finish(null);
@@ -224,10 +229,12 @@ class GAdController {
           completer.finish(ad);
           final delay = GenerateHelper.random(6, 30);
           await Future.delayed(Duration(seconds: delay));
-          ad.show().catchError((_) {});
-          _log(
-            "Start showing ad. total time in ${_scheduleInSeconds + delay} seconds",
-          );
+          if (!_disposed) {
+            ad.show().catchError((_) {});
+            _log(
+              "Start showing ad. total time in ${_scheduleInSeconds + delay} seconds",
+            );
+          }
         },
         onAdFailedToLoad: (error) {
           completer.finish(null);
@@ -238,6 +245,7 @@ class GAdController {
   }
 
   void dispose() {
+    _disposed = true;
     _interval?.cancel();
     _interval = null;
   }
