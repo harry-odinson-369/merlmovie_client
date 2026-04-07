@@ -266,9 +266,9 @@ class GAdController {
               Icon(Icons.ads_click, size: 50, color: Colors.blue),
               SizedBox(height: 15),
               Text(
-                "On the next screen, you'll see a request to allow tracking. "
-                "By allowing this, you help us show you ads that are actually relevant to you. "
-                "\n\nThis keeps our app free and supports our developers!",
+                'We care about your privacy and data security. We keep this app free by showing ads. '
+                'Can we continue to use your data to tailor ads for you?\n\nYou can change your choice anytime in the app settings. '
+                'Our partners will collect data and use a unique identifier on your device to show you ads.',
                 textAlign: TextAlign.center,
               ),
             ],
