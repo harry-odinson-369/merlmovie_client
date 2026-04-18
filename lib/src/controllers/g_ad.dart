@@ -141,19 +141,6 @@ class GAdController {
     _log("Schedule the next ad in ${delay.inSeconds} seconds");
   }
 
-  Future<bool> _canRequestAd() async {
-    if (_unitId == null) return false;
-    try {
-      if (Platform.isAndroid) {
-        return await ConsentInformation.instance.canRequestAds();
-      } else {
-        return true;
-      }
-    } catch (_) {
-      return true;
-    }
-  }
-
   Future _show() async {
     if (_disposed) return;
     if (_isShowing) {
@@ -161,10 +148,8 @@ class GAdController {
       _scheduleNext();
       return;
     }
-    if (!await _canRequestAd()) {
-      _log(
-        "Cannot request ad, ${_unitId == null ? "unitId cannot be null" : "user has not consent"}!",
-      );
+    if (_unitId == null) {
+      _log("Cannot request ad, unitId cannot be null!");
       _scheduleNext();
       return;
     }
