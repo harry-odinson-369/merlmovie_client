@@ -1,19 +1,16 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:merlmovie_client/src/extensions/completer.dart';
 import 'package:merlmovie_client/src/helpers/generate.dart';
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 String? _unitId;
 Duration? _minDur;
 Duration? _maxDur;
 bool _isAppActive = true;
 bool _debug = false;
+InitializationStatus? _initializationStatus;
 
 class GAdController {
   static Duration defMaxDur = Duration(minutes: 10);
@@ -57,44 +54,21 @@ class GAdController {
     _debug = isDebug;
   }
 
-  /// Request App Tracking Transparency for iOS version.
-  static Future<TrackingStatus?> requestATT({
-    Future<void> Function()? showExplainerDialog,
-  }) async {
-    try {
-      // 1. Check if the platform supports ATT at all (avoids errors on Android/Web)
-      if (!Platform.isIOS) return TrackingStatus.notSupported;
-      String key = "__req_att_sta__";
-      var pref = await SharedPreferences.getInstance();
-      // Get current status from the system
-      TrackingStatus state =
-          await AppTrackingTransparency.trackingAuthorizationStatus;
-      // 2. Only show the flow if we haven't asked before AND status is notDetermined
-      if (pref.getBool(key) != true && state == TrackingStatus.notDetermined) {
-        if (showExplainerDialog != null) {
-          await showExplainerDialog();
-          // Critical: Give the UI time to dispose of the custom dialog
-          // so the System Dialog has "room" to appear.
-          await Future.delayed(const Duration(milliseconds: 500));
-        }
-        // 3. Request the system prompt
-        state = await AppTrackingTransparency.requestTrackingAuthorization();
-        // Mark as asked so we don't annoy the user again
-        await pref.setBool(key, true);
-      }
-      return state;
-    } catch (e) {
-      debugPrint("ATT Request Error: $e");
-      return TrackingStatus.notSupported;
-    }
+  static InitializationStatus? get initializationStatus =>
+      _initializationStatus;
+
+  static Future<InitializationStatus?> initializeAdSDK() async {
+    if (!await canRequestAd()) return null;
+    if (_initializationStatus != null) return _initializationStatus;
+    _initializationStatus = await MobileAds.instance.initialize();
+    return _initializationStatus;
   }
 
-  /// Request user consent (GDPR/EEA) for Android version.
-  static Future<ConsentStatus> requestConsent({
+  /// Gather user consent (GDPR/EEA/ATT). Call this function at the very first of [initializeAdSDK].
+  static Future<ConsentStatus> gatherConsent({
     ConsentDebugSettings? consentDebugSettings,
   }) async {
-    if (!Platform.isAndroid) return ConsentStatus.unknown;
-    _log("Requesting user consent");
+    _log("Gathering user consent...");
     final completer = Completer<ConsentStatus>();
     final params = ConsentRequestParameters(
       consentDebugSettings: consentDebugSettings,
@@ -126,6 +100,7 @@ class GAdController {
   }
 
   void create({String? adUnitId, Duration? min, Duration? max}) {
+    if (_initializationStatus == null) return;
     if (adUnitId != null) _unitId = adUnitId;
     if (min != null) _minDur = min;
     if (max != null) _maxDur = max;
@@ -246,39 +221,5 @@ class GAdController {
     _disposed = true;
     _interval?.cancel();
     _interval = null;
-  }
-
-  Future<void> showATTExplainerDialog(BuildContext context) async {
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          title: const Text("Dear User"),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.ads_click, size: 50, color: Colors.blue),
-              SizedBox(height: 15),
-              Text(
-                'We care about your privacy and data security. We keep this app free by showing ads. '
-                'Can we continue to use your data to tailor ads for you?\n\nYou can change your choice anytime in the app settings. '
-                'Our partners will collect data and use a unique identifier on your device to show you ads.',
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: const Text("Continue"),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        );
-      },
-    );
   }
 }
