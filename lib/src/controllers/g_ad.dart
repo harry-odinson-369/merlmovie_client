@@ -117,7 +117,7 @@ class GAdController {
     return state;
   }
 
-  Future<bool> canRequestAd() async {
+  static Future<bool> canRequestAd() async {
     try {
       return await ConsentInformation.instance.canRequestAds();
     } catch (_) {
