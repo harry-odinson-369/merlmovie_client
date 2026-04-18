@@ -117,6 +117,14 @@ class GAdController {
     return state;
   }
 
+  Future<bool> canRequestAd() async {
+    try {
+      return await ConsentInformation.instance.canRequestAds();
+    } catch (_) {
+      return true;
+    }
+  }
+
   void create({String? adUnitId, Duration? min, Duration? max}) {
     if (adUnitId != null) _unitId = adUnitId;
     if (min != null) _minDur = min;
@@ -150,6 +158,11 @@ class GAdController {
     }
     if (_unitId == null) {
       _log("Cannot request ad, unitId cannot be null!");
+      _scheduleNext();
+      return;
+    }
+    if (!await canRequestAd()) {
+      _log("Cannot request ad, consent was not granted!");
       _scheduleNext();
       return;
     }
