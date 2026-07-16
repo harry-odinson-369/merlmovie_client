@@ -158,8 +158,11 @@ class _MerlMovieClientWebViewPlayerState
             );
             update();
             if (_blockedUrlCallback != null) {
-              var origin = await webViewFlutterController?.currentUrl();
-              _blockedUrlCallback!(request.url, origin);
+              var currentUrl = await webViewFlutterController?.currentUrl();
+              if (currentUrl != null && currentUrl.startsWith("http")) {
+                final uri = Uri.parse(currentUrl);
+                _blockedUrlCallback!(request.url, uri.origin);
+              }
             }
             return NavigationDecision.prevent;
           }
