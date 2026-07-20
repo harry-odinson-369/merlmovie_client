@@ -147,30 +147,28 @@ class PromptDialog extends StatelessWidget {
     } else {
       return AlertDialog(
         title: Text(title, style: titleStyle),
+        constraints: BoxConstraints(maxWidth: 500),
         backgroundColor: backgroundColor ?? Colors.grey.shade800,
-        content: SizedBox(
-          width: context.maxMobileWidth,
-          child:
-              subtitle == null
-                  ? null
-                  : scrollableSubtitle
-                  ? SingleChildScrollView(
-                    child: ExpandCollapseText(
-                      text: subtitle ?? "",
-                      style: subtitleStyle,
-                      linkStyle: subtitleStyle?.copyWith(color: Colors.blue),
-                      textAlign: TextAlign.start,
-                      collapsedMaxLines: 999,
-                    ),
-                  )
-                  : ExpandCollapseText(
+        content:
+            subtitle == null
+                ? null
+                : scrollableSubtitle
+                ? SingleChildScrollView(
+                  child: ExpandCollapseText(
                     text: subtitle ?? "",
                     style: subtitleStyle,
                     linkStyle: subtitleStyle?.copyWith(color: Colors.blue),
-                    collapsedMaxLines: 999,
                     textAlign: TextAlign.start,
+                    collapsedMaxLines: 999,
                   ),
-        ),
+                )
+                : ExpandCollapseText(
+                  text: subtitle ?? "",
+                  style: subtitleStyle,
+                  linkStyle: subtitleStyle?.copyWith(color: Colors.blue),
+                  collapsedMaxLines: 999,
+                  textAlign: TextAlign.start,
+                ),
         actions: actions,
       );
     }

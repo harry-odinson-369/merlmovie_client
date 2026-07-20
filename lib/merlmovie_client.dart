@@ -8,6 +8,7 @@ export 'src/apis/client.dart';
 export 'src/apis/server.dart';
 
 export 'src/models/plugin.dart';
+export 'src/models/url_player.dart';
 export 'src/models/direct_link.dart';
 export 'src/models/embed.dart';
 export 'src/models/subtitle.dart';

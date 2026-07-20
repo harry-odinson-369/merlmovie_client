@@ -28,15 +28,14 @@ import 'package:merlmovie_client/src/widgets/player_select_episode.dart';
 import 'package:merlmovie_client/src/widgets/player_select_similar_sheet.dart';
 import 'package:merlmovie_client/src/widgets/prompt_dialog.dart';
 import 'package:merlmovie_client/src/widgets/webview.dart';
-import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
-typedef BlockedURLCallback = void Function(String url, String? origin);
+typedef BlockedURLCallbackType = void Function(String url, String? origin);
 
-BlockedURLCallback? _blockedUrlCallback;
+BlockedURLCallbackType? BlockedURLsCallback;
 
 class MerlMovieClientWebViewPlayer extends StatefulWidget {
   final EmbedModel embed;
@@ -62,13 +61,8 @@ class MerlMovieClientWebViewPlayer extends StatefulWidget {
     this.zenMode = false,
   });
 
-  static set blockedUrlCallback(BlockedURLCallback? cb) {
-    _blockedUrlCallback = cb;
-  }
-
   @override
-  State<MerlMovieClientWebViewPlayer> createState() =>
-      _MerlMovieClientWebViewPlayerState();
+  State<MerlMovieClientWebViewPlayer> createState() => _MerlMovieClientWebViewPlayerState();
 }
 
 class _MerlMovieClientWebViewPlayerState
@@ -157,11 +151,11 @@ class _MerlMovieClientWebViewPlayerState
               link: request.url,
             );
             update();
-            if (_blockedUrlCallback != null) {
+            if (BlockedURLsCallback != null) {
               var currentUrl = await webViewFlutterController?.currentUrl();
               if (currentUrl != null && currentUrl.startsWith("http")) {
                 final uri = Uri.parse(currentUrl);
-                _blockedUrlCallback!(request.url, uri.origin);
+                BlockedURLsCallback!(request.url, uri.origin);
               }
             }
             return NavigationDecision.prevent;
@@ -467,7 +461,7 @@ class _MerlMovieClientWebViewPlayerState
     createWebViewFlutterController();
     update();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<PlayerStateProvider>(context, listen: false).setValue(true);
+      use<PlayerStateProvider>().setValue(true);
     });
     super.initState();
   }
@@ -479,13 +473,8 @@ class _MerlMovieClientWebViewPlayerState
         widget.onDisposedDeviceOrientations,
       );
       WakelockPlus.disable().catchError((er) {});
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (NavigatorKey.currentContext != null) {
-          Provider.of<PlayerStateProvider>(
-            NavigatorKey.currentContext!,
-            listen: false,
-          ).setValue(false);
-        }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        use<PlayerStateProvider>().setValue(false);
       });
     }
     gAdController?.dispose();
@@ -503,7 +492,6 @@ class _MerlMovieClientWebViewPlayerState
     webViewFlutterController = null;
     PopupLinkHiddenView = null;
     _webProgressTimer?.cancel();
-    _hideBarButtonsTimer?.cancel();
     super.dispose();
   }
 

@@ -21,12 +21,14 @@ import 'package:merlmovie_client/src/models/embed.dart';
 import 'package:merlmovie_client/src/models/movie.dart';
 import 'package:merlmovie_client/src/models/callback.dart';
 import 'package:merlmovie_client/src/models/plugin.dart';
+import 'package:merlmovie_client/src/models/url_player.dart';
 import 'package:merlmovie_client/src/models/wss.dart';
 import 'package:merlmovie_client/src/providers/browser.dart';
 import 'package:merlmovie_client/src/widgets/browser.dart';
 import 'package:merlmovie_client/src/widgets/player.dart';
 import 'package:merlmovie_client/src/widgets/webview.dart';
 import 'package:merlmovie_client/src/widgets/webview_player.dart';
+import 'package:merlmovie_client/src/widgets/webview_url_player.dart';
 import 'package:merlmovie_client/src/widgets/wss_select_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -457,5 +459,27 @@ class MerlMovieClient {
             : MaterialPageRoute(builder: (context) => child),
       );
     }
+  }
+
+  static Future openUrls(
+    List<URLPlayerModel> urls, {
+    List<DeviceOrientation>? onDisposedDeviceOrientations,
+    bool fadeTransition = false,
+  }) {
+    Widget child = WebViewURLPlayerWidget(
+      urls: urls,
+      onDisposedDeviceOrientations: onDisposedDeviceOrientations,
+    );
+    var route =
+        fadeTransition
+            ? PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => child,
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child1) =>
+                      FadeTransition(opacity: animation, child: child1),
+              transitionDuration: const Duration(milliseconds: 300),
+            )
+            : MaterialPageRoute(builder: (context) => child);
+    return Navigator.of(NavigatorKey.currentContext!).push(route);
   }
 }
