@@ -147,7 +147,18 @@ class PromptDialog extends StatelessWidget {
     } else {
       return AlertDialog(
         title: Text(title, style: titleStyle),
-        constraints: BoxConstraints(maxWidth: 500, minWidth: 240),
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          minWidth: (context.screen.width - 56).clamp(200, 400),
+        ),
+        insetPadding: EdgeInsets.symmetric(horizontal: 28),
+        contentPadding: EdgeInsets.only(
+          top: 16,
+          left: 24,
+          right: 24,
+          bottom: 16,
+        ),
+        actionsPadding: EdgeInsets.only(left: 24, right: 16, bottom: 16),
         backgroundColor: backgroundColor ?? Colors.grey.shade800,
         content:
             subtitle == null
