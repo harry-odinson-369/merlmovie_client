@@ -114,6 +114,9 @@ class _WebViewURLPlayerWidgetState extends State<WebViewURLPlayerWidget> {
       onProgress: (pro) => onProgress(pro),
       onNavigationRequest: (request) async {
         final uri = Uri.parse(request.url);
+        if (uri.host == Uri.parse(current.url).host) {
+          return NavigationDecision.navigate;
+        }
         bool isMatched = current.allowed_hosts.exist((e) => e == uri.host);
         if (request.isMainFrame && !isMatched) {
           bgUrlNotifier.value = request.url;

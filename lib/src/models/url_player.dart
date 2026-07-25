@@ -1,6 +1,9 @@
+import 'package:merlmovie_client/src/models/plugin.dart';
+
 class URLPlayerModel {
   String name;
   String url;
+  /// [allowed_hosts] work differently from [PluginModel.allowedDomains]. [allowed_hosts] should be like 'example.com'.
   List<String> allowed_hosts;
   Map<String, String> headers = <String, String>{};
   String? script;
