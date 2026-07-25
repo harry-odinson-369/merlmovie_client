@@ -139,7 +139,7 @@ class PromptDialog extends StatelessWidget {
                     style: subtitleStyle,
                     linkStyle: subtitleStyle?.copyWith(color: Colors.blue),
                     collapsedMaxLines: 999,
-                    textAlign: TextAlign.start,
+                    textAlign: TextAlign.center,
                   ),
           actions: actions,
         ),
