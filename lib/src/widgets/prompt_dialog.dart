@@ -151,7 +151,7 @@ class PromptDialog extends StatelessWidget {
           maxWidth: 400,
           minWidth: (context.screen.width - 56).clamp(200, 400),
         ),
-        insetPadding: EdgeInsets.symmetric(horizontal: 28),
+        insetPadding: EdgeInsets.symmetric(horizontal: 16),
         contentPadding: EdgeInsets.only(
           top: 16,
           left: 24,
