@@ -45,6 +45,10 @@ import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:wifi_address_helper/wifi_address_helper.dart';
 
+typedef OnDirectLinkRequest =
+    Future<DirectLink> Function(DirectLink link, EmbedModel embed);
+typedef OnRequestDetail = Future<DetailModel> Function(MovieModel movie);
+
 class MerlMovieClientPlayer extends StatefulWidget {
   final EmbedModel embed;
   final MerlMovieClientPlayerCallback? callback;
@@ -54,9 +58,8 @@ class MerlMovieClientPlayer extends StatefulWidget {
   final List<Season> seasons;
   final List<MovieModel> similar;
   final String? selectPluginSheetLabel;
-  final Future<DetailModel> Function(MovieModel movie)? onRequestDetail;
-  final Future<DirectLink> Function(DirectLink link, EmbedModel embed)?
-  onDirectLinkRequested;
+  final OnRequestDetail? onRequestDetail;
+  final OnDirectLinkRequest? onDirectLinkRequested;
   final String? local;
   const MerlMovieClientPlayer({
     super.key,
