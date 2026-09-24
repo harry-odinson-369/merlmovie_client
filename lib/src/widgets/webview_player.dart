@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -62,7 +63,8 @@ class MerlMovieClientWebViewPlayer extends StatefulWidget {
   });
 
   @override
-  State<MerlMovieClientWebViewPlayer> createState() => _MerlMovieClientWebViewPlayerState();
+  State<MerlMovieClientWebViewPlayer> createState() =>
+      _MerlMovieClientWebViewPlayerState();
 }
 
 class _MerlMovieClientWebViewPlayerState
@@ -165,10 +167,26 @@ class _MerlMovieClientWebViewPlayerState
       ),
     );
     webViewFlutterController?.addJavaScriptChannel(
-      "WebViewPlayerChannel",
+      "merlmovie_client",
       onMessageReceived: (msg) {
         if (msg.message == "error") {
           onError();
+        } else {
+          try {
+            var object = json.decode(msg.message);
+            if (object is String) object = json.decode(object);
+            final position = object['position'];
+            final duration = object['duration'];
+            if (position != null && duration != null) {
+              var pos = double.parse(position.toString());
+              var dur = double.parse(duration.toString());
+              widget.callback?.onPositionChanged?.call(
+                widget.embed,
+                Duration(seconds: pos.toInt()),
+                Duration(seconds: dur.toInt()),
+              );
+            }
+          } catch (_) {}
         }
       },
     );

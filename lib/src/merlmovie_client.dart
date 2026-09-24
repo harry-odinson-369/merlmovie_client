@@ -289,7 +289,7 @@ class MerlMovieClient {
     );
   }
 
-  static _checkJSON(String body) {
+  static dynamic _checkJSON(String body) {
     try {
       return json.decode(body);
     } catch (e) {
