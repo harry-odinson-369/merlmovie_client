@@ -83,7 +83,7 @@ class EmbedModel {
 
     for (MapEntry<String, dynamic> entry in key_map.entries) {
       if (entry.value != null) {
-        link = replace(link, entry.key, entry.value);
+        link = replace(link, entry.key, entry.value.toString());
       } else if (isShouldRemove(entry)) {
         link = replace(link, entry.key, "");
       }
