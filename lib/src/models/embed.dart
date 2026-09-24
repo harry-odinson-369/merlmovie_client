@@ -11,6 +11,7 @@ class EmbedModel {
       thumbnail = "",
       title_logo = "",
       other_id = "";
+  int position;    
   DetailModel detail;
   PluginModel plugin;
 
@@ -23,6 +24,7 @@ class EmbedModel {
     this.season = "",
     this.episode = "",
     this.title_logo = "",
+    this.position = 0,
     required this.detail,
     required this.plugin,
   });
@@ -36,6 +38,7 @@ class EmbedModel {
     type: map["type"] ?? "",
     season: map["season"] ?? "",
     episode: map["episode"] ?? "",
+    position: map["position"] ?? 0,
     detail: DetailModel.fromMap(map["detail"] ?? {}),
     plugin: PluginModel.fromMap(map["plugin"] ?? {}),
   );
@@ -49,6 +52,7 @@ class EmbedModel {
     "type": type,
     "season": season,
     "episode": episode,
+    "position": position,
     "detail": detail.toJson(),
     "plugin": plugin.toMap(),
   };
@@ -69,6 +73,9 @@ class EmbedModel {
       "{e}": episode,
       "/{s}": season.isNotEmpty ? "/$season" : null,
       "/{e}": episode.isNotEmpty ? "/$episode" : null,
+      "{p}": position,
+      "{pos}": position,
+      "{position}": position,
     };
 
     String replace(String input, String from, String to) => input.split(from).join(to);

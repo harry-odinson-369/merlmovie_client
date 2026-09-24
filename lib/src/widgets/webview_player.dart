@@ -180,6 +180,7 @@ class _MerlMovieClientWebViewPlayerState
             if (position != null && duration != null) {
               var pos = double.parse(position.toString());
               var dur = double.parse(duration.toString());
+              widget.embed.position = pos.toInt();
               widget.callback?.onPositionChanged?.call(
                 widget.embed,
                 Duration(seconds: pos.toInt()),
@@ -336,6 +337,7 @@ class _MerlMovieClientWebViewPlayerState
       plugin,
       widget.embed.detail,
       widget.embed.detail.seasons.findCurrentEpisode(widget.embed),
+      widget.embed.position,
     );
     playNewEmbed(newEmbed);
   }

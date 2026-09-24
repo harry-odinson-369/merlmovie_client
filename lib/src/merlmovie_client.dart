@@ -321,6 +321,7 @@ class MerlMovieClient {
     PluginModel selected,
     DetailModel detail, [
     Episode? episode,
+    int? position,
   ]) {
     return EmbedModel(
       plugin: selected,
@@ -331,6 +332,7 @@ class MerlMovieClient {
       season: episode?.seasonNumber.toString() ?? "",
       episode: episode?.episodeNumber.toString() ?? "",
       title: detail.real_title,
+      position: position ?? 0,
       thumbnail: TheMovieDbApi.getImage(
         episode != null ? episode.stillPath : detail.backdropPath,
         TMDBImageSize.original,

@@ -780,9 +780,15 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     }
   }
 
+  Duration get initPos {
+    return widget.initialPosition == Duration.zero
+        ? Duration(seconds: widget.embed.position)
+        : widget.initialPosition;
+  }
+
   @override
   void initState() {
-    position = widget.initialPosition;
+    position = initPos;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 250),
       vsync: this,
@@ -794,7 +800,7 @@ class _MerlMovieClientPlayerState extends State<MerlMovieClientPlayer>
     SubtitleTheme.getTheme().then((value) => subtitleTheme.value = value);
     MerlMovieClientPlayer.setDeviceOrientationAndSystemUI();
     WakelockPlus.enable().catchError((er) {});
-    initialize(initialPos: widget.initialPosition);
+    initialize(initialPos: initPos);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PlayerStateProvider>(context, listen: false).setValue(true);
     });
